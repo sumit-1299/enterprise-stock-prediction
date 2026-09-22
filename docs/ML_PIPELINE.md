@@ -264,3 +264,39 @@ The platform supports dynamic model version switching via `/api/predictions/<sym
 - Changing the active version invalidates the internal memory cache (`PredictionService.invalidate_model_cache(symbol)`).
 - Subsequent predictions immediately utilize the newly selected model artifact without restarting backend containers.
 
+---
+
+## 🛠️ On-Demand Model Training CLI
+
+To train and register XGBoost models for any of the 14 supported NSE equities:
+
+```bash
+# Inside backend container
+python manage.py train_model --symbol ICICIBANK.NS --promote
+
+# Or run via docker compose
+docker compose exec -T backend python manage.py train_model --symbol SBIN.NS --promote
+```
+
+### Stock Coverage & Registry Status
+
+| Symbol | Company Name | Sector | Production Model | Artifact Status |
+|---|---|---|---|---|
+| `TCS.NS` | Tata Consultancy Services Ltd. | Information Technology | `v1` (Active) | Deployed (`ml/models/artifacts/`) |
+| `INFY.NS` | Infosys Ltd. | Information Technology | `v1` (Active) | Deployed (`ml/models/artifacts/`) |
+| `RELIANCE.NS` | Reliance Industries Ltd. | Energy & Conglomerate | `v1` (Active) | Deployed (`ml/models/artifacts/`) |
+| `HDFCBANK.NS` | HDFC Bank Ltd. | Financial Services | `v1` (Active) | Deployed (`ml/models/artifacts/`) |
+| `ICICIBANK.NS` | ICICI Bank Ltd. | Financial Services | None | Trainable via CLI (`train_model`) |
+| `SBIN.NS` | State Bank of India | Financial Services | None | Trainable via CLI (`train_model`) |
+| `LT.NS` | Larsen & Toubro Ltd. | Industrial | None | Trainable via CLI (`train_model`) |
+| `ITC.NS` | ITC Ltd. | FMCG | None | Trainable via CLI (`train_model`) |
+| `BHARTIARTL.NS` | Bharti Airtel Ltd. | Telecom | None | Trainable via CLI (`train_model`) |
+| `AXISBANK.NS` | Axis Bank Ltd. | Financial Services | None | Trainable via CLI (`train_model`) |
+| `KOTAKBANK.NS` | Kotak Mahindra Bank Ltd. | Financial Services | None | Trainable via CLI (`train_model`) |
+| `HINDUNILVR.NS` | Hindustan Unilever Ltd. | FMCG | None | Trainable via CLI (`train_model`) |
+| `MARUTI.NS` | Maruti Suzuki India Ltd. | Automobile | None | Trainable via CLI (`train_model`) |
+| `SUNPHARMA.NS` | Sun Pharmaceutical Industries Ltd. | Pharmaceutical | None | Trainable via CLI (`train_model`) |
+
+> [!NOTE]
+> Untrained stocks cleanly raise `ModelNotFoundError` (`MODEL_NOT_FOUND`) and are represented in the frontend as `"Model not yet trained for this stock"`. Predictions are never fabricated or borrowed across different stock symbols.
+

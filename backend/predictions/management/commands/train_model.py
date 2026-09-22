@@ -1,71 +1,76 @@
 """
-Management command to train and register a new candidate model version.
+Management command to train and register an XGBoost model for a stock.
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from ml.training.train_xgboost_classifier import train_xgboost_classifier
+from ml.models.model_registry import ModelRegistry
+from ml.training.train_xgboost_classifier import _determine_next_version, train_xgboost_classifier
+from stocks.universe import get_supported_symbols
 
 
 class Command(BaseCommand):
-    help = "Train and register a candidate machine learning model version (does not replace production)."
+    help = "Train and register an XGBoost direction prediction model for a stock"
 
     def add_arguments(self, parser):
-        parser.add_argument("symbol", type=str, help="Stock ticker symbol to train model for (e.g. TCS.NS)")
         parser.add_argument(
-            "--model-type",
+            "--symbol",
             type=str,
-            default="xgboost_classifier",
-            help="Model architecture (default: xgboost_classifier)",
+            required=True,
+            help="Stock ticker symbol (e.g. ICICIBANK.NS or TCS.NS)",
         )
         parser.add_argument(
-            "--model-version",
+            "--version",
             type=str,
             default=None,
-            help="Explicit version tag (default: auto-increment, e.g. v2)",
+            help="Explicit version tag (default: next candidate version, e.g. v1)",
+        )
+        parser.add_argument(
+            "--promote",
+            action="store_true",
+            help="Automatically promote the trained model to production status",
         )
 
     def handle(self, *args, **options):
         symbol = options["symbol"].strip().upper()
-        model_type = options["model_type"].strip()
-        version = options["model_version"].strip() if options.get("model_version") else None
+        supported = get_supported_symbols()
 
-        if model_type != "xgboost_classifier":
-            raise CommandError(f"Unsupported model type '{model_type}'. Supported: 'xgboost_classifier'.")
+        if symbol not in supported:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Warning: Symbol '{symbol}' is not in the default supported universe: {supported}"
+                )
+            )
 
-        self.stdout.write(
-            f"Starting offline training for {symbol} ({model_type})...\n"
-        )
+        version = options["version"] or _determine_next_version(symbol, "xgboost_classifier")
+
+        self.stdout.write(f"Starting training for {symbol} (version={version})...")
 
         try:
-            result = train_xgboost_classifier(
+            res = train_xgboost_classifier(
                 symbol=symbol,
                 version=version,
                 status="candidate",
             )
+        except Exception as exc:
+            raise CommandError(f"Training failed for {symbol}: {exc}")
 
-            test_m = result["test_metrics"]
-            val_m = result["validation_metrics"]
-            base_m = result["majority_metrics"]
+        self.stdout.write(self.style.SUCCESS(f"\nModel trained successfully for {symbol}!"))
+        self.stdout.write(f"  Symbol:         {res['symbol']}")
+        self.stdout.write(f"  Version:        {res['version']}")
+        self.stdout.write(f"  Model Path:     {res['model_path']}")
+        self.stdout.write(f"  Metadata Path:  {res['metadata_path']}")
+        self.stdout.write(f"  Test Accuracy:  {res['test_metrics'].get('accuracy', 0):.4f}")
+        self.stdout.write(f"  Test Precision: {res['test_metrics'].get('precision', 0):.4f}")
+        self.stdout.write(f"  Test Recall:    {res['test_metrics'].get('recall', 0):.4f}")
+        self.stdout.write(f"  Test F1 Score:  {res['test_metrics'].get('f1', 0):.4f}")
+        self.stdout.write(f"  Test ROC-AUC:   {res['test_metrics'].get('roc_auc', 0):.4f}")
 
-            self.stdout.write(self.style.SUCCESS(f"\nTraining successfully completed for {symbol}!"))
-            self.stdout.write(f"Model Version: {result['version']}")
-            self.stdout.write(f"Status:        {self.style.WARNING(result['status'])} (NOT in production)")
-            self.stdout.write(f"Artifact:      {result['model_path']}")
-            self.stdout.write(f"Metadata:      {result['metadata_path']}")
-
-            self.stdout.write("\nEvaluation Metrics Comparison:")
-            self.stdout.write(f"{'METRIC':<18} {'VALIDATION':<12} {'TEST':<12} {'MAJORITY BASELINE':<18}")
-            self.stdout.write("-" * 60)
-            for k in ["accuracy", "precision", "recall", "f1", "roc_auc"]:
-                v_val = f"{val_m.get(k, 0.0):.4f}" if val_m.get(k) is not None else "N/A"
-                t_val = f"{test_m.get(k, 0.0):.4f}" if test_m.get(k) is not None else "N/A"
-                b_val = f"{base_m.get(k, 0.0):.4f}" if base_m.get(k) is not None else "N/A"
-                self.stdout.write(f"{k:<18} {v_val:<12} {t_val:<12} {b_val:<18}")
-
-            self.stdout.write(self.style.NOTICE(
-                f"\nNOTE: To promote this model to production, run:\n"
-                f"python backend/manage.py promote_model {symbol} {model_type} {result['version']}\n"
-            ))
-
-        except Exception as e:
-            raise CommandError(f"Training failed for {symbol}: {e}")
+        if options["promote"]:
+            self.stdout.write(f"\nPromoting {symbol} version '{version}' to production...")
+            prom_res = ModelRegistry.promote_model(
+                symbol=symbol,
+                model_type="xgboost_classifier",
+                version=version,
+                target_status="production",
+            )
+            self.stdout.write(self.style.SUCCESS(f"SUCCESS: {prom_res['message']}"))

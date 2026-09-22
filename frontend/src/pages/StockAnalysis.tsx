@@ -33,12 +33,7 @@ interface StockAnalysisProps {
   isLoading: boolean;
 }
 
-const COMPANY_NAMES: Record<string, string> = {
-  "TCS.NS": "Tata Consultancy Services Ltd.",
-  "RELIANCE.NS": "Reliance Industries Ltd.",
-  "INFY.NS": "Infosys Ltd.",
-  "HDFCBANK.NS": "HDFC Bank Ltd.",
-};
+import { COMPANY_NAMES } from "../config/stocks";
 
 export const StockAnalysis: React.FC<StockAnalysisProps> = ({
   currentSymbol,

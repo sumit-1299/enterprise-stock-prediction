@@ -66,6 +66,18 @@ export const KPIGrid: React.FC<KPIGridProps> = ({
 
   const isPositiveChange = changePctVal !== null && changePctVal !== undefined && changePctVal >= 0;
 
+  const formatModelName = (rawType?: string): string => {
+    if (!rawType) return "XGBoost Classifier";
+    if (rawType.toLowerCase().includes("xgboost")) return "XGBoost Classifier";
+    if (rawType.toLowerCase().includes("lightgbm")) return "LightGBM";
+    if (rawType.toLowerCase().includes("catboost")) return "CatBoost";
+    if (rawType.toLowerCase().includes("random_forest")) return "Random Forest";
+    return rawType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  const modelDisplay = formatModelName(modelInfo?.model_type);
+  const modelVersion = modelInfo?.model_version || "v1";
+
   return (
     <div className="kpi-grid">
       {/* 1. CURRENT PRICE */}
@@ -172,15 +184,31 @@ export const KPIGrid: React.FC<KPIGridProps> = ({
 
       {/* 5. ACTIVE MODEL */}
       <KpiCard
-        title="Model"
-        value={modelInfo?.model_type || "XGBoost v1"}
+        title="Active Model"
+        value={
+          <div
+            title={`Technical identifier: ${modelInfo?.model_type || "xgboost_classifier"} (${modelVersion})`}
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              fontFamily: "var(--font-sans)",
+              letterSpacing: "-0.01em",
+              lineHeight: 1.2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {modelDisplay}
+          </div>
+        }
         subtext="12 Engineered Features"
         icon={Cpu}
         accentColor="indigo"
         badge={
           <StatusBadge
             variant="operational"
-            label="Active"
+            label={modelVersion}
             size="sm"
           />
         }

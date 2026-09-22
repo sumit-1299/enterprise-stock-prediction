@@ -39,10 +39,15 @@ This document provides a component-by-component architectural walkthrough of the
 ---
 
 ### 2. `backend/stocks/` (Universe Management)
+- **`universe.py`**:
+  - Central source of truth for the 14-stock NSE universe (`STOCK_UNIVERSE`). Provides helper utilities `get_supported_symbols()`, `get_stock_metadata()`, and sector definitions.
 - **`models.py`**:
   - **`Stock`**: Primary entity for registered equities. Stores `symbol` (unique, indexed), `company_name`, `exchange` (e.g. `NSE`), `sector`, `currency` (default `INR`), and `is_active`.
+- **`views.py` & `urls.py`**:
+  - **`StockListView`** (`GET /api/stocks/`): Lists all active registered equities with company name, exchange, sector, and currency.
+  - **`StockDetailView`** (`GET /api/stocks/<symbol>/`): Returns detailed metadata for a single equity.
 - **`management/commands/register_universe.py`**:
-  - CLI management command to bootstrap and register the core NSE stock universe (`TCS.NS`, `RELIANCE.NS`, `INFY.NS`, `HDFCBANK.NS`) with sector and exchange metadata.
+  - CLI management command to bootstrap and register all 14 NSE equities (`TCS.NS`, `INFY.NS`, `RELIANCE.NS`, `HDFCBANK.NS`, `ICICIBANK.NS`, `SBIN.NS`, `LT.NS`, `ITC.NS`, `BHARTIARTL.NS`, `AXISBANK.NS`, `KOTAKBANK.NS`, `HINDUNILVR.NS`, `MARUTI.NS`, `SUNPHARMA.NS`) with sector and exchange metadata into PostgreSQL.
 
 ---
 
@@ -93,11 +98,40 @@ This document provides a component-by-component architectural walkthrough of the
   - **`PredictionDetailView`**: Complete prediction audit detail including the 12-feature snapshot.
   - **`ModelInfoView` & `ModelAnalyticsView`**: Model metadata and feature importance.
   - **`ModelMonitoringSummaryView`, `ModelMonitoringPerformanceView`, `ModelMonitoringDriftView`, `ModelMonitoringDataQualityView`**: Production MLOps monitoring endpoints.
+- **`management/commands/train_model.py`**:
+  - CLI management command (`python manage.py train_model --symbol <SYMBOL> [--promote]`) to train XGBoost classifiers on historical data for any supported equity, evaluate performance, generate serialized artifacts and metadata, and optionally promote to production in the model registry.
 
 ---
 
 ### 5. `backend/users/` (Authentication)
 - Standard Django authentication app prepared for multi-tenant institutional user roles.
+
+---
+
+### 6. `backend/ai_agent/` (Market Intelligence Assistant)
+- **`apps.py`**: Configures `ai_agent` application.
+- **`urls.py`**: Routes `POST /api/ai-agent/chat/`.
+- **`views.py`**:
+  - **`AgentChatView`**: Rate-limited endpoint for interactive AI assistance, logging latency and tools invoked.
+- **`serializers.py`**: Request/response contracts with input validation and execution timing.
+- **`services/`**:
+  - **`agent_service.py`**: Main orchestrator coordinating context, tools, and provider execution.
+  - **`context_service.py`**: Serializes active stock, page, and model status into session context.
+  - **`prompt_service.py`**: Generates grounded system prompt enforcing 15 rules and financial safety guardrails.
+  - **`tool_registry.py`**: Central registry of 11 tools with OpenAPI-compatible JSON schemas.
+- **`providers/`**:
+  - **`base.py`**: `BaseLLMProvider` abstract interface.
+  - **`openai_provider.py`**: Live OpenAI LLM integration with function calling.
+  - **`deterministic_provider.py`**: Offline rule- and template-based reasoning engine executing real backend tools against PostgreSQL.
+  - **`factory.py`**: Instantiates configured provider with automatic fallback.
+- **`tools/`**:
+  - `market_data_tool.py`: `get_stock_quote`, `get_market_history_summary`.
+  - `technical_analysis_tool.py`: `get_technical_indicators`.
+  - `prediction_tool.py`: `get_prediction`.
+  - `model_tool.py`: `get_model_metadata`, `get_model_performance`, `get_feature_importance`.
+  - `history_tool.py`: `get_prediction_history`.
+  - `system_tool.py`: `get_supported_stocks`, `get_system_health`, `get_project_architecture`.
+- **`tests.py`**: 14 unit and integration tests with mocked and real database verification.
 
 ---
 
@@ -150,6 +184,9 @@ This document provides a component-by-component architectural walkthrough of the
   - `PriceChart.tsx`, `InteractivePriceChart.tsx`, `VolumeChart.tsx`, `PredictionConfidenceChart.tsx`, `ModelMetricsChart.tsx`, `FeatureImportanceChart.tsx`, `RSIChart.tsx`, `MACDChart.tsx`, `VolatilityChart.tsx`, `ReturnDistributionChart.tsx`, `CorrelationHeatmap.tsx`.
 - **`auth/`**:
   - `LoginPage.tsx`: Split-layout landing / login experience with branding, data geometry, and clean authentication card.
+- **`ai-assistant/`**:
+  - `AssistantTrigger.tsx`: Polished floating `✦ AI Assistant` action button with glowing gradient and symbol pill.
+  - `AssistantPanel.tsx`: Responsive slide-over panel with conversation stream, contextual prompt chips, citations, thinking animation, and financial safety warnings.
 
 ### 3. `frontend/src/services/` & `hooks/`
 - **`services/api.ts`**: Centralized API service with error handling and typing.

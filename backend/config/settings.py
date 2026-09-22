@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'stocks',
     'market_data',
     'predictions',
+    'ai_agent',
 ]
 
 MIDDLEWARE = [
@@ -181,8 +182,12 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300  # 5 minutes hard limit
 
 # Market Data Ingestion Symbols & Schedule
+DEFAULT_MARKET_SYMBOLS = (
+    'TCS.NS,INFY.NS,RELIANCE.NS,HDFCBANK.NS,ICICIBANK.NS,SBIN.NS,LT.NS,ITC.NS,'
+    'BHARTIARTL.NS,AXISBANK.NS,KOTAKBANK.NS,HINDUNILVR.NS,MARUTI.NS,SUNPHARMA.NS'
+)
 MARKET_DATA_SYMBOLS = [
-    s.strip() for s in os.getenv('MARKET_DATA_SYMBOLS', 'TCS.NS,RELIANCE.NS,INFY.NS,HDFCBANK.NS').split(',') if s.strip()
+    s.strip() for s in os.getenv('MARKET_DATA_SYMBOLS', DEFAULT_MARKET_SYMBOLS).split(',') if s.strip()
 ]
 MARKET_DATA_INGEST_INTERVAL_SECONDS = int(os.getenv('MARKET_DATA_INGEST_INTERVAL_SECONDS', '300'))
 
@@ -208,5 +213,12 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# AI Market Intelligence Assistant Configuration
+# ------------------------------------------------------------------------------
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'deterministic')
+AI_PROVIDER_API_KEY = os.getenv('AI_PROVIDER_API_KEY', '')
+AI_MODEL_NAME = os.getenv('AI_MODEL_NAME', 'gpt-4o-mini')
+AI_AGENT_RATE_LIMIT = os.getenv('AI_AGENT_RATE_LIMIT', '30/m')
 
 

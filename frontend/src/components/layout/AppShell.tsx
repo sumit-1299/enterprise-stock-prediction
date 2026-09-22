@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
+import { AssistantTrigger, AssistantPanel } from "../ai-assistant";
 import { NavSectionId, SystemStatusState } from "../../types";
 
 interface AppShellProps {
@@ -49,6 +50,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     return window.innerWidth < 1200;
   });
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState<boolean>(false);
 
   // Synchronize URL hash with active section
   useEffect(() => {
@@ -85,6 +87,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         isMobileOpen={isMobileOpen}
         onCloseMobile={() => setIsMobileOpen(false)}
         systemStatus={systemStatus}
+        onOpenAssistant={() => setIsAssistantOpen(true)}
       />
 
       <div className={`main-wrapper ${isCollapsed ? "sidebar-collapsed" : ""}`}>
@@ -145,6 +148,22 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
         </main>
       </div>
+
+      {/* Market Intelligence AI Assistant */}
+      <AssistantTrigger
+        isOpen={isAssistantOpen}
+        onToggle={() => setIsAssistantOpen(true)}
+        currentSymbol={currentSymbol}
+      />
+
+      <AssistantPanel
+        isOpen={isAssistantOpen}
+        onClose={() => setIsAssistantOpen(false)}
+        currentSymbol={currentSymbol}
+        activeSection={activeSection}
+        onSelectSymbol={onSelectSymbol}
+        onNavigateSection={handleSelectSection}
+      />
     </div>
   );
 };

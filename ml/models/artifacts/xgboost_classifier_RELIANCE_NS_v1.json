@@ -39,7 +39,7 @@
         "log_loss": 0.8138086199760437
     },
     "created_at": "2026-09-22T09:49:21.062791+00:00",
-    "promoted_at": "2026-09-22T14:25:06.240136+00:00",
+    "promoted_at": "2026-09-22T15:15:04.286638+00:00",
     "retired_at": null,
     "evaluation_splits": {
         "validation": {

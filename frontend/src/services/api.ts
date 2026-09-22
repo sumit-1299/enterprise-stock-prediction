@@ -18,6 +18,8 @@ import {
   ModelMonitoringPerformanceResponse,
   ModelMonitoringDriftResponse,
   ModelMonitoringDataQualityResponse,
+  AgentChatRequest,
+  AgentChatResponse,
 } from "../types";
 
 // Base URL: defaults to '/api' (leveraging Vite proxy in dev) or environment variable
@@ -340,6 +342,23 @@ export async function getModelVersions(
   } catch (err: any) {
     if (err instanceof ApiError) throw err;
     throw new ApiError("Unable to retrieve model versions.", "NETWORK_ERROR", 0);
+  }
+}
+
+export async function sendAgentMessage(payload: AgentChatRequest): Promise<AgentChatResponse> {
+  try {
+    const response = await fetch(`${BASE_URL}/ai-agent/chat/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    return await handleResponse<AgentChatResponse>(response);
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError("Failed to communicate with Market Intelligence Assistant.", "AI_AGENT_NETWORK_ERROR", 0);
   }
 }
 

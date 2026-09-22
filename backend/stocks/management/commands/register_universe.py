@@ -1,44 +1,16 @@
 """
-Management command to register the initial 4-stock universe in the database.
+Management command to register the 14-stock universe in the database.
 """
 
 from django.core.management.base import BaseCommand
 from stocks.models import Stock
+from stocks.universe import STOCK_UNIVERSE
 
 
 class Command(BaseCommand):
-    help = "Register initial 4-stock universe (TCS.NS, RELIANCE.NS, INFY.NS, HDFCBANK.NS)"
+    help = "Register 14-stock NSE universe in database"
 
-    UNIVERSE = [
-        {
-            "symbol": "TCS.NS",
-            "company_name": "Tata Consultancy Services",
-            "exchange": "NSE",
-            "sector": "Information Technology",
-            "currency": "INR",
-        },
-        {
-            "symbol": "RELIANCE.NS",
-            "company_name": "Reliance Industries",
-            "exchange": "NSE",
-            "sector": "Conglomerate",
-            "currency": "INR",
-        },
-        {
-            "symbol": "INFY.NS",
-            "company_name": "Infosys Limited",
-            "exchange": "NSE",
-            "sector": "Information Technology",
-            "currency": "INR",
-        },
-        {
-            "symbol": "HDFCBANK.NS",
-            "company_name": "HDFC Bank",
-            "exchange": "NSE",
-            "sector": "Financial Services",
-            "currency": "INR",
-        },
-    ]
+    UNIVERSE = STOCK_UNIVERSE
 
     def handle(self, *args, **options):
         self.stdout.write("Registering stock universe in database...")

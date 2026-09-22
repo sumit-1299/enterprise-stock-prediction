@@ -140,6 +140,12 @@ flowchart TB
   - `DB 1`: Celery message broker.
   - `DB 2`: Celery task result backend.
 
+### 7. AI Market Intelligence Assistant (`ai_agent`)
+- **AgentService**: Primary orchestrator coordinating session context, prompt engineering, tool execution, and provider calls.
+- **ToolRegistry**: Controlled execution registry of 11 backend tools querying real market prices, indicators, predictions, model metrics, and platform health.
+- **Provider Abstraction**: Dual-serving architecture supporting live OpenAI tool-calling LLMs alongside a zero-dependency deterministic offline fallback for offline demonstrations, testing, and viva defense.
+- **Financial Safety Engine**: Neutrality filters preventing investment advice and appending mandatory risk compliance disclaimers.
+
 ---
 
 ## 🔄 Data Flow & Sequence Diagrams
@@ -217,6 +223,35 @@ sequenceDiagram
         end
     end
     Worker->>DB: Commit resolved outcomes in atomic transaction
+```
+
+### D. AI Market Intelligence Assistant Tool-Calling Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as End User (Browser)
+    participant Panel as AssistantPanel (React)
+    participant API as AgentChatView (Django)
+    participant Svc as AgentService
+    participant Reg as ToolRegistry
+    participant Tools as Backend Tools (Market/ML/DB)
+    participant Prov as LLM / Deterministic Provider
+
+    User->>Panel: Asks: "Why is TCS predicted UP?"
+    Panel->>API: POST /api/ai-agent/chat/ (symbol="TCS.NS", page="dashboard")
+    API->>Svc: process_message(message, symbol, page, history)
+    Svc->>Svc: ContextService.build_context("TCS.NS", "dashboard")
+    Svc->>Svc: PromptService.get_system_prompt(context)
+    Svc->>Prov: generate_response(prompt, messages, tool_schemas)
+    Prov->>Reg: Select tools: get_prediction("TCS.NS"), get_technical_indicators("TCS.NS")
+    Reg->>Tools: Query PostgreSQL & XGBoost Model Registry
+    Tools-->>Reg: Return real prediction (UP, 54.4%) & RSI/MACD indicators
+    Reg-->>Prov: Inject structured tool outputs
+    Prov-->>Svc: Synthesize grounded quantitative response
+    Svc-->>API: Format response, tools_used, citations, execution_time_ms
+    API-->>Panel: HTTP 200 JSON Response
+    Panel-->>User: Render formatted answer with citation badges & suggested questions
 ```
 
 ---

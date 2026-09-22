@@ -36,12 +36,7 @@ interface DashboardProps {
   error?: { code?: string; message: string } | null;
 }
 
-const COMPANY_NAMES: Record<string, string> = {
-  "TCS.NS": "Tata Consultancy Services Ltd.",
-  "RELIANCE.NS": "Reliance Industries Ltd.",
-  "INFY.NS": "Infosys Ltd.",
-  "HDFCBANK.NS": "HDFC Bank Ltd.",
-};
+import { COMPANY_NAMES } from "../config/stocks";
 
 export const Dashboard: React.FC<DashboardProps> = ({
   currentSymbol,

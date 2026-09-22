@@ -166,6 +166,21 @@ flowchart TD
   - High-readability typography: **Inter** for UI copy, **JetBrains Mono** for numerical and monetary figures.
   - Micro-interactions: 200ms `pageEnter` transitions, active button compressions, and card hover elevations.
 
+## 🤖 AI Market Intelligence Assistant
+
+### 1. Dual-Provider Architecture
+- **OpenAI Provider (`requests`)**:
+  - Implements standard OpenAI Chat Completions API with native tool/function calling protocol (`gpt-4o-mini`).
+  - Automatically executes backend tools and synthesizes answers with zero frontend exposure of API keys.
+- **Deterministic Offline Provider**:
+  - Zero-dependency rule- and template-based reasoning engine.
+  - Executes the exact same backend tools from `ToolRegistry` against real PostgreSQL data.
+  - Ensures 100% functionality during offline viva presentations, academic defense, and automated testing.
+
+### 2. Controlled Tooling Engine
+- **ToolRegistry**: Type-safe registry of 11 backend tools exposing real market data, technical indicators, predictions, model governance, and telemetry.
+- **Context & Safety**: Dynamic session context serialization, 15 grounding rules, financial advice refusal guardrails, and compliance disclaimers.
+
 ---
 
 ## 🐳 Containerization & Gateway

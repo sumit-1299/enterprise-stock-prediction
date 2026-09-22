@@ -72,7 +72,7 @@ const FEATURE_METADATA: Record<string, { label: string; category: string; descri
   macd_hist: { label: "MACD Histogram", category: "Momentum", description: "Difference between MACD line and 9-day signal line" },
 };
 
-const AVAILABLE_SYMBOLS = ["TCS.NS", "RELIANCE.NS", "INFY.NS", "HDFCBANK.NS"];
+import { SUPPORTED_STOCKS } from "../config/stocks";
 
 export const PredictionHistory: React.FC<PredictionHistoryProps> = ({
   currentSymbol: initialSymbol,
@@ -277,9 +277,9 @@ export const PredictionHistory: React.FC<PredictionHistoryProps> = ({
                 cursor: "pointer",
               }}
             >
-              {AVAILABLE_SYMBOLS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+              {SUPPORTED_STOCKS.map((s) => (
+                <option key={s.symbol} value={s.symbol}>
+                  {s.symbol.replace(".NS", "")} — {s.companyName}
                 </option>
               ))}
             </select>

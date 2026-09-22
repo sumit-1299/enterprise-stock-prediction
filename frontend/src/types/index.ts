@@ -419,4 +419,31 @@ export interface ModelMonitoringDataQualityResponse {
   checks?: QualityCheckItem[];
 }
 
+export interface AgentMessage {
+  id: string;
+  sender: "user" | "assistant";
+  text: string;
+  timestamp: string;
+  toolsUsed?: string[];
+  citations?: string[];
+  suggestedQuestions?: string[];
+  isError?: boolean;
+}
+
+export interface AgentChatRequest {
+  message: string;
+  symbol?: string;
+  page?: string;
+  conversation_history?: Array<{ sender: "user" | "assistant"; text: string }>;
+}
+
+export interface AgentChatResponse {
+  response: string;
+  symbol: string;
+  tools_used: string[];
+  citations: string[];
+  suggested_questions: string[];
+  execution_time_ms: number;
+}
+
 

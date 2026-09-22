@@ -1,6 +1,6 @@
 # MarketIQ — Enterprise Stock Price Prediction & Market Intelligence Platform
 
-[![Build & Tests](https://img.shields.io/badge/tests-82%20passed%20(100%25)-success?style=flat-square&logo=django)](docs/TESTING.md)
+[![Build & Tests](https://img.shields.io/badge/tests-97%20passed%20(100%25)-success?style=flat-square&logo=django)](docs/TESTING.md)
 [![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python)](docs/TECH_STACK.md)
 [![Django](https://img.shields.io/badge/django-5.1-green?style=flat-square&logo=django)](docs/TECH_STACK.md)
 [![React](https://img.shields.io/badge/react-18.3-61DAFB?style=flat-square&logo=react)](docs/TECH_STACK.md)
@@ -34,23 +34,36 @@ An enterprise-grade, production-ready quantitative finance and machine learning 
 
 ## 🚀 Project Overview
 
-**MarketIQ** is an institutional quantitative market intelligence application designed to forecast next-day equity directional price movements ($y_{t+1} \in \{\text{UP}, \text{DOWN}\}$) across major National Stock Exchange of India (NSE) symbols (e.g., `TCS.NS`, `RELIANCE.NS`, `INFY.NS`, `HDFCBANK.NS`).
+**MarketIQ** is an institutional quantitative market intelligence application designed to forecast next-day equity directional price movements ($y_{t+1} \in \{\text{UP}, \text{DOWN}\}$) across 14 major National Stock Exchange of India (NSE) symbols across 7 key sectors:
+
+- **Information Technology**: TCS (`TCS.NS`) [Trained], Infosys (`INFY.NS`) [Trained]
+- **Energy & Conglomerate**: Reliance Industries (`RELIANCE.NS`) [Trained]
+- **Financial Services**: HDFC Bank (`HDFCBANK.NS`) [Trained], ICICI Bank (`ICICIBANK.NS`), State Bank of India (`SBIN.NS`), Axis Bank (`AXISBANK.NS`), Kotak Mahindra Bank (`KOTAKBANK.NS`)
+- **Industrial & Infrastructure**: Larsen & Toubro (`LT.NS`)
+- **FMCG**: ITC Ltd. (`ITC.NS`), Hindustan Unilever (`HINDUNILVR.NS`)
+- **Technology / Telecom**: Bharti Airtel (`BHARTIARTL.NS`)
+- **Automobile**: Maruti Suzuki (`MARUTI.NS`)
+- **Pharmaceutical**: Sun Pharma (`SUNPHARMA.NS`)
 
 The platform is engineered around strict quantitative finance and data science principles:
 
 1. **Zero Lookahead Bias**: Strict sequential time-series splitting for feature preparation and model training ($t \le T$).
 2. **Deterministic Data Integrity**: Real market observations from PostgreSQL; missing observations return explicit `"Data unavailable"` indicators rather than synthetic or fabricated values.
-3. **End-to-End MLOps**: Continuous Population Stability Index (PSI) feature drift tracking, rolling accuracy evaluation, confusion matrix heatmaps, and probability calibration buckets.
-4. **Dual-Serving Delivery**: Low-latency Django REST Framework endpoints coupled with full-duplex WebSocket channel streams via Django Channels and Redis.
-5. **Modern FinTech Light UI**: A high-density quantitative dashboard built with React 18, TypeScript, Recharts, and a calibrated `#F4F7FB` enterprise color system.
+3. **No Fabricated Predictions**: 4 core equities have calibrated production XGBoost models (`v1`), while the 10 newly added equities cleanly report `Model not yet trained for this stock` until trained via `python manage.py train_model --symbol <SYMBOL>`.
+4. **End-to-End MLOps**: Continuous Population Stability Index (PSI) feature drift tracking, rolling accuracy evaluation, confusion matrix heatmaps, and probability calibration buckets.
+5. **Dual-Serving Delivery**: Low-latency Django REST Framework endpoints (`/api/stocks/`, `/api/predictions/`, `/api/market-data/`) coupled with full-duplex WebSocket channel streams via Django Channels and Redis.
+6. **Modern FinTech Light UI**: A high-density quantitative dashboard built with React 18, TypeScript, Recharts, and a calibrated `#F4F7FB` enterprise color system.
 
 ---
 
 ## ✨ Key Features
 
+- **14 NSE Equities Supported**: Complete coverage across 7 major sectors with real-time stock search (by symbol, company name, or sector) and dynamic stock universe endpoint (`GET /api/stocks/`).
+- **Market Intelligence AI Assistant**: Embedded quantitative explanation agent with controlled backend tools, dual-provider abstraction (OpenAI + deterministic offline fallback), context-aware financial education, and strict financial safety guardrails.
 - **Automated Market Data Ingestion**: Automated polling of historical and real-time EOD OHLCV bars via `MarketDataService` with resilient network failover and retry logic.
 - **12 Technical Indicators**: High-performance feature engineering calculating SMA (10, 20, 50), EMA (12, 26), MACD line & signal, RSI (14), 20-day rolling annualized volatility, 1D/5D returns, and volume changes.
 - **XGBoost Directional Classification**: Gradient boosted decision tree classifiers trained on sequential market regimes with calibrated probability confidence.
+- **Model Training CLI**: Train models for any supported equity on-demand with `python manage.py train_model --symbol <SYMBOL> [--promote]`.
 - **Model Registry & Governance**: Complete lifecycle management tracking model versions (`candidate` &rarr; `staging` &rarr; `production` &rarr; `retired`), artifact checksums, and evaluation splits.
 - **Prediction History & Auditing**: Auditable historical ledger recording every inference, prediction probabilities, 12-feature snapshots, realized market returns, and automated resolution (`CORRECT`, `INCORRECT`, `PENDING`).
 - **Population Stability Index (PSI) Drift Monitoring**: Quantifies feature distribution divergence between reference baseline training sets and live production inference observations.
@@ -240,17 +253,17 @@ All 7 containers should report `Up` or `healthy`:
 The platform features an automated test suite verifying market data ingestion, feature extraction, ML inference isolation, and REST API contracts:
 
 ```bash
-docker compose exec -T backend python /app/backend/manage.py test market_data predictions stocks users --keepdb
+docker compose exec -T backend python /app/backend/manage.py test market_data predictions stocks users ai_agent --keepdb
 ```
 
 **Test Execution Output**:
 ```
-Ran 82 tests in 4.771s
+Ran 97 tests in 4.091s
 
 OK
 Preserving test database for alias 'default'...
 ```
-- **Total Tests**: **82 / 82 passing (100% pass rate, 0 failures, 0 errors)**.
+- **Total Tests**: **97 / 97 passing (100% pass rate, 0 failures, 0 errors)**.
 - **Frontend Build**: Verified with zero TypeScript compiler (`tsc`) errors and zero Vite bundle warnings.
 
 For testing methodology and test case descriptions, see [docs/TESTING.md](docs/TESTING.md).
@@ -263,6 +276,7 @@ Explore the complete technical documentation suite:
 
 | Document | Description |
 |---|---|
+| **[AI_AGENT.md](docs/AI_AGENT.md)** | Market Intelligence Assistant architecture, tools, safety, and providers |
 | **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System topology, sequence diagrams, and fault-tolerance mechanics |
 | **[TECH_STACK.md](docs/TECH_STACK.md)** | Comprehensive technology stack breakdown and dependency catalog |
 | **[MODULE_GUIDE.md](docs/MODULE_GUIDE.md)** | File-by-file codebase guide across backend, frontend, and ML |

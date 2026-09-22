@@ -72,11 +72,17 @@ flowchart TD
 
 ### 1.1 Ingestion Triggers
 Market data ingestion is initiated via three separate mechanisms:
-1. **Periodic Celery Beat**: Executes `market_data.tasks.scheduled_market_data_ingest` every 300 seconds during active market regimes.
+1. **Periodic Celery Beat**: Executes `market_data.tasks.scheduled_market_data_ingest` every 300 seconds during active market regimes across all 14 configured equities (`MARKET_DATA_SYMBOLS`).
 2. **On-Demand User Selection**: Triggered whenever an analyst selects a new stock symbol in the UI via `GET /api/predictions/<symbol>/` or `GET /api/market-data/<symbol>/history/`.
-3. **CLI Management Commands**: Triggered manually via `python manage.py ingest_market_data --symbol TCS.NS --period 1y`.
+3. **CLI Management Commands**:
+   - Register universe: `python manage.py register_universe` (registers all 14 NSE equities).
+   - Ingest data: `python manage.py ingest_market_data --symbol TCS.NS --period 1y` (or any of the 14 symbols).
 
-### 1.2 Ingestion Implementation
+### 1.2 Supported Stock Universe
+The platform tracks 14 liquid NSE equities across 7 sectors:
+`TCS.NS`, `INFY.NS`, `RELIANCE.NS`, `HDFCBANK.NS`, `ICICIBANK.NS`, `SBIN.NS`, `LT.NS`, `ITC.NS`, `BHARTIARTL.NS`, `AXISBANK.NS`, `KOTAKBANK.NS`, `HINDUNILVR.NS`, `MARUTI.NS`, `SUNPHARMA.NS`.
+
+### 1.3 Ingestion Implementation
 Handled by `market_data.services.market_data_service.MarketDataService`:
 - Normalizes ticker symbols (e.g., ensuring `.NS` suffix for National Stock Exchange of India).
 - Queries `yfinance.Ticker(symbol).history(period=period, interval=interval)`.

@@ -113,9 +113,31 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         {value}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, fontSize: 11, color: "#64748B" }}>
-        {subtext && <span>{subtext}</span>}
-        {badge && <div>{badge}</div>}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 6,
+          fontSize: 11,
+          color: "#64748B",
+          flexWrap: "wrap",
+        }}
+      >
+        {subtext && (
+          <span
+            style={{
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {subtext}
+          </span>
+        )}
+        {badge && <div style={{ flexShrink: 0 }}>{badge}</div>}
       </div>
     </div>
   );

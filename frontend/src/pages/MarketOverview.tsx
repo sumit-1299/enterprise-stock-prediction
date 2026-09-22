@@ -21,28 +21,7 @@ interface StockOverviewData {
   isLoading: boolean;
 }
 
-const CONFIGURED_STOCKS = [
-  {
-    symbol: "TCS.NS",
-    name: "Tata Consultancy Services Ltd.",
-    sector: "Information Technology",
-  },
-  {
-    symbol: "INFY.NS",
-    name: "Infosys Limited",
-    sector: "Information Technology",
-  },
-  {
-    symbol: "RELIANCE.NS",
-    name: "Reliance Industries Limited",
-    sector: "Energy & Conglomerate",
-  },
-  {
-    symbol: "HDFCBANK.NS",
-    name: "HDFC Bank Limited",
-    sector: "Banking & Finance",
-  },
-];
+import { SUPPORTED_STOCKS } from "../config/stocks";
 
 export const MarketOverview: React.FC<MarketOverviewProps> = ({
   currentSymbol,
@@ -54,7 +33,7 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
     const newMap: Record<string, StockOverviewData> = {};
 
     await Promise.all(
-      CONFIGURED_STOCKS.map(async (stock) => {
+      SUPPORTED_STOCKS.map(async (stock) => {
         let priceData: MarketDataLatestResponse | null = null;
         let predData: PredictionResponse | null = null;
 
@@ -113,9 +92,9 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
           </button>
         </div>
 
-        {/* 4 Stock Cards */}
+        {/* 14 Stock Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {CONFIGURED_STOCKS.map((stock) => {
+          {SUPPORTED_STOCKS.map((stock) => {
             const isSelected = stock.symbol === currentSymbol;
             const data = stockDataMap[stock.symbol];
 
@@ -166,10 +145,15 @@ export const MarketOverview: React.FC<MarketOverviewProps> = ({
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
-                      {stock.symbol}
-                    </span>
-                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{stock.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>
+                        {stock.symbol}
+                      </span>
+                      <span style={{ fontSize: 10, color: "#64748B", background: "#F1F5F9", padding: "1px 5px", borderRadius: 3 }}>
+                        {stock.sector}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{stock.companyName}</div>
                   </div>
 
                   {data?.modelAvailable ? (

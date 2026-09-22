@@ -1,18 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Loader2, ArrowRight } from "lucide-react";
+import { SUPPORTED_STOCKS, StockConfig } from "../../config/stocks";
 
 interface StockSelectorProps {
   currentSymbol: string;
   onSelectSymbol: (symbol: string) => void;
   isLoading: boolean;
 }
-
-const SUGGESTED_SYMBOLS = [
-  { symbol: "TCS.NS", name: "Tata Consultancy Services Ltd.", exchange: "NSE" },
-  { symbol: "RELIANCE.NS", name: "Reliance Industries Limited", exchange: "NSE" },
-  { symbol: "INFY.NS", name: "Infosys Limited", exchange: "NSE" },
-  { symbol: "HDFCBANK.NS", name: "HDFC Bank Limited", exchange: "NSE" },
-];
 
 export const StockSelector: React.FC<StockSelectorProps> = ({
   currentSymbol,
@@ -21,28 +15,86 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
 }) => {
   const [inputVal, setInputVal] = useState(currentSymbol);
 
+  // Sync input value with currentSymbol
+  useEffect(() => {
+    setInputVal(currentSymbol);
+  }, [currentSymbol]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputVal.trim()) {
-      onSelectSymbol(inputVal.trim().toUpperCase());
+    const query = inputVal.trim();
+    if (!query) return;
+
+    // Search by symbol, ticker prefix, or company name
+    const match = SUPPORTED_STOCKS.find(
+      (s) =>
+        s.symbol.toUpperCase() === query.toUpperCase() ||
+        s.symbol.replace(".NS", "").toUpperCase() === query.toUpperCase() ||
+        s.companyName.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (match) {
+      onSelectSymbol(match.symbol);
+      setInputVal(match.symbol);
+    } else {
+      onSelectSymbol(query.toUpperCase());
     }
   };
 
-  const currentMeta = SUGGESTED_SYMBOLS.find(
+  const currentMeta: StockConfig | undefined = SUPPORTED_STOCKS.find(
     (s) => s.symbol.toUpperCase() === currentSymbol.toUpperCase()
   );
 
   return (
-    <div className="stock-selector-card">
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-        {/* Active Stock Badge */}
-        <div className="stock-selector-info">
-          <div className="stock-badge">
+    <div
+      className="card-standard"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        padding: "18px 22px",
+      }}
+    >
+      {/* Top Row: Stock Identity & Search Field */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 14,
+        }}
+      >
+        {/* Left: Active Stock Details */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 16,
+              fontWeight: 800,
+              color: "#1D4ED8",
+              backgroundColor: "#EFF6FF",
+              border: "1.5px solid #BFDBFE",
+              padding: "6px 12px",
+              borderRadius: 8,
+              letterSpacing: "0.04em",
+              flexShrink: 0,
+            }}
+          >
             {currentSymbol}
           </div>
-          <div className="stock-meta">
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span className="stock-name">{currentMeta?.name || "NSE Listed Equity"}</span>
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  color: "#172033",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                {currentMeta?.companyName || "NSE Listed Equity"}
+              </span>
               <span
                 style={{
                   fontSize: 10,
@@ -57,20 +109,54 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
               >
                 {currentMeta?.exchange || "NSE"}
               </span>
+              {currentMeta?.sector && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    backgroundColor: "#F1F5F9",
+                    color: "#475569",
+                  }}
+                >
+                  {currentMeta.sector}
+                </span>
+              )}
             </div>
-            <span className="stock-exchange">Equities Segment • Regular Market Hours</span>
+            <span
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                fontFamily: "var(--font-mono)",
+                marginTop: 2,
+              }}
+            >
+              Equities Segment • Regular Market Hours
+            </span>
           </div>
         </div>
 
-        {/* Search Field */}
+        {/* Right: Search Input */}
         <form
           onSubmit={handleSubmit}
-          className="stock-search-box"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: "#F8FAFC",
+            border: "1px solid #CBD5E1",
+            borderRadius: 8,
+            padding: "6px 12px",
+            gap: 8,
+            width: 280,
+            maxWidth: "100%",
+            transition: "all 0.15s ease",
+          }}
         >
-          <Search size={15} style={{ color: "#64748B" }} />
+          <Search size={14} style={{ color: "#64748B", flexShrink: 0 }} />
           <input
             type="text"
-            placeholder="Search symbol (e.g. TCS.NS)..."
+            placeholder="Search symbol (e.g. ICICI, SBIN)..."
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
             disabled={isLoading}
@@ -80,44 +166,93 @@ export const StockSelector: React.FC<StockSelectorProps> = ({
               background: "transparent",
               fontSize: 12,
               fontFamily: "var(--font-mono)",
-              color: "var(--text-primary)",
+              color: "#172033",
               width: "100%",
             }}
           />
         </form>
       </div>
 
-      {/* Suggested Stocks & Action Button */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
-          Suggested:
-        </span>
-        <div className="stock-pills-row">
-          {SUGGESTED_SYMBOLS.map((s) => {
-            const isSelected = currentSymbol.toUpperCase() === s.symbol.toUpperCase();
-            return (
-              <button
-                key={s.symbol}
-                type="button"
-                className={`stock-pill-btn ${isSelected ? "active" : ""}`}
-                onClick={() => {
-                  setInputVal(s.symbol);
-                  onSelectSymbol(s.symbol);
-                }}
-                disabled={isLoading}
-              >
-                {s.symbol}
-              </button>
-            );
-          })}
+      {/* Divider */}
+      <div style={{ height: 1, background: "#EEF3F8", width: "100%" }} />
+
+      {/* Bottom Row: Universe (14) Chips & Analyze Button */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#64748B",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              flexShrink: 0,
+            }}
+          >
+            Universe ({SUPPORTED_STOCKS.length}):
+          </span>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              alignItems: "center",
+            }}
+          >
+            {SUPPORTED_STOCKS.map((s) => {
+              const isSelected = currentSymbol.toUpperCase() === s.symbol.toUpperCase();
+              return (
+                <button
+                  key={s.symbol}
+                  type="button"
+                  className={`stock-pill-btn ${isSelected ? "active" : ""}`}
+                  title={`${s.companyName} (${s.symbol}) — ${s.sector}`}
+                  onClick={() => {
+                    setInputVal(s.symbol);
+                    onSelectSymbol(s.symbol);
+                  }}
+                  disabled={isLoading}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    padding: "4px 9px",
+                    borderRadius: 6,
+                  }}
+                >
+                  <span>{s.symbol.replace(".NS", "")}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Analyze Button with Blue/Purple Gradient */}
+        {/* Analyze Stock Action Button */}
         <button
           type="button"
           className="btn-primary-gradient"
-          onClick={() => onSelectSymbol(inputVal.trim().toUpperCase())}
+          onClick={() => {
+            const query = inputVal.trim();
+            if (!query) return;
+            const match = SUPPORTED_STOCKS.find(
+              (s) =>
+                s.symbol.toUpperCase() === query.toUpperCase() ||
+                s.symbol.replace(".NS", "").toUpperCase() === query.toUpperCase() ||
+                s.companyName.toLowerCase().includes(query.toLowerCase())
+            );
+            onSelectSymbol(match ? match.symbol : query.toUpperCase());
+          }}
           disabled={isLoading || !inputVal.trim()}
+          style={{ flexShrink: 0 }}
         >
           {isLoading ? (
             <>

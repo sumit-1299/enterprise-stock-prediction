@@ -25,6 +25,8 @@ This document provides complete technical specifications for all REST API endpoi
 - [Real-Time WebSocket Streams](#real-time-websocket-streams)
   - [11. Market Price Stream (`/ws/market/<symbol>/`)](#11-market-price-stream-wsmarketsymbol)
   - [12. Prediction Broadcast Stream (`/ws/predictions/<symbol>/`)](#12-prediction-broadcast-stream-wspredictionssymbol)
+- [AI Market Intelligence Assistant](#ai-market-intelligence-assistant)
+  - [13. Agent Chat (`POST /api/ai-agent/chat/`)](#13-agent-chat-post-apiai-agentchat)
 
 ---
 
@@ -476,3 +478,53 @@ Broadcasts real-time model inference updates whenever a new prediction is genera
   }
 }
 ```
+
+---
+
+## 🤖 AI Market Intelligence Assistant
+
+### 13. Agent Chat (`POST /api/ai-agent/chat/`)
+Interactive conversational endpoint connecting users to the Market Intelligence Assistant with controlled tool calling, financial safety guardrails, and contextual session grounding.
+
+- **URL**: `/api/ai-agent/chat/`
+- **Method**: `POST`
+- **Rate Limit**: 60 requests per minute per IP address
+- **Request Body**:
+```json
+{
+  "message": "Why is TCS predicted UP?",
+  "symbol": "TCS.NS",
+  "page": "dashboard",
+  "conversation_history": [
+    {"sender": "user", "text": "What is the prediction for TCS?"},
+    {"sender": "assistant", "text": "The model predicts UP with 54.4% confidence."}
+  ]
+}
+```
+
+- **Response (HTTP 200)**:
+```json
+{
+  "response": "**Next-Day Directional Forecast for Tata Consultancy Services Ltd. (TCS.NS)**\n\n- Predicted Direction: **UP**\n- Model Confidence: **54.4%**\n...",
+  "symbol": "TCS.NS",
+  "tools_used": [
+    "get_prediction",
+    "get_technical_indicators"
+  ],
+  "citations": [
+    "Prediction Model",
+    "Technical Indicators"
+  ],
+  "suggested_questions": [
+    "What is the historical accuracy for TCS.NS?",
+    "Explain the RSI for TCS.NS",
+    "What features are most important to the model?"
+  ],
+  "execution_time_ms": 26.27
+}
+```
+
+- **Error Responses**:
+  - `400 BAD REQUEST`: Empty or invalid payload (`INVALID_INPUT`).
+  - `429 TOO MANY REQUESTS`: Rate limit exceeded (`RATE_LIMIT_EXCEEDED`).
+  - `500 INTERNAL SERVER ERROR`: Temporary service unavailability (`AI_AGENT_ERROR`).

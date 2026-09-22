@@ -15,14 +15,10 @@ interface TopHeaderProps {
   onOpenLogin?: () => void;
 }
 
-const COMPANY_NAMES: Record<string, string> = {
-  "TCS.NS": "Tata Consultancy Services Ltd.",
-  "RELIANCE.NS": "Reliance Industries Ltd.",
-  "INFY.NS": "Infosys Ltd.",
-  "HDFCBANK.NS": "HDFC Bank Ltd.",
-};
-
-const POPULAR_SYMBOLS = ["TCS.NS", "RELIANCE.NS", "INFY.NS", "HDFCBANK.NS"];
+import {
+  SUPPORTED_STOCKS,
+  StockConfig,
+} from "../../config/stocks";
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   pageTitle,
@@ -51,14 +47,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtered symbols for autocomplete
-  const matchingSymbols = useMemo(() => {
+  // Filtered stocks for autocomplete (searches company name, symbol, or sector)
+  const matchingStocks = useMemo<StockConfig[]>(() => {
     if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return POPULAR_SYMBOLS.filter(
+    const q = searchQuery.toLowerCase().trim();
+    return SUPPORTED_STOCKS.filter(
       (s) =>
-        s.toLowerCase().includes(q) ||
-        (COMPANY_NAMES[s] && COMPANY_NAMES[s].toLowerCase().includes(q))
+        s.symbol.toLowerCase().includes(q) ||
+        s.companyName.toLowerCase().includes(q) ||
+        s.sector.toLowerCase().includes(q)
     );
   }, [searchQuery]);
 
@@ -112,24 +109,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   };
 
   return (
-    <header
-      className="top-header"
-      style={{
-        height: 64,
-        background: "#FFFFFF",
-        borderBottom: "1px solid #DCE4EE",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 24px",
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-        boxShadow: "0 1px 3px rgba(23, 32, 51, 0.04)",
-      }}
-    >
-      {/* Left: Sidebar Toggle + Breadcrumbs + Page Title */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+    <header className="top-header">
+      {/* Left: Sidebar Toggle + Clean Context / Breadcrumb */}
+      <div className="header-left">
         <button
           type="button"
           className="header-toggle-btn"
@@ -140,85 +122,50 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <Menu size={18} />
         </button>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* Breadcrumb */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontSize: 11,
-              color: "#64748B",
-              fontFamily: "var(--font-sans)",
-            }}
-          >
-            <span style={{ fontWeight: 600 }}>MarketIQ</span>
-            <ChevronRight size={11} style={{ color: "#94A3B8" }} />
-            <span style={{ color: "#2563EB", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
-              {currentSymbol}
-            </span>
-            <ChevronRight size={11} style={{ color: "#94A3B8" }} />
-            <span>{pageTitle || "Dashboard"}</span>
-          </div>
-
-          {/* Page Heading */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <h1
-              style={{
-                fontSize: 16,
-                fontWeight: 800,
-                color: "#172033",
-                letterSpacing: "-0.01em",
-                margin: 0,
-                lineHeight: 1.2,
-              }}
-            >
-              {pageTitle || "Dashboard"}
-            </h1>
-            <span
-              style={{
-                fontSize: 11,
-                fontFamily: "var(--font-mono)",
-                fontWeight: 600,
-                color: "#475569",
-                background: "#F1F5F9",
-                padding: "2px 8px",
-                borderRadius: 4,
-                border: "1px solid #E2E8F0",
-              }}
-            >
-              {COMPANY_NAMES[currentSymbol] || "NSE Equities"}
-            </span>
-          </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            color: "#64748B",
+            fontFamily: "var(--font-sans)",
+            fontWeight: 500,
+          }}
+        >
+          <span style={{ fontWeight: 700, color: "#172033" }}>MarketIQ</span>
+          <ChevronRight size={13} style={{ color: "#94A3B8" }} />
+          <span style={{ color: "#2563EB", fontWeight: 700, fontFamily: "var(--font-mono)" }}>
+            {currentSymbol}
+          </span>
+          <ChevronRight size={13} style={{ color: "#94A3B8" }} />
+          <span style={{ color: "#475569" }}>{pageTitle || "Dashboard"}</span>
         </div>
       </div>
 
-      {/* Center: Global Stock Search Bar with Live Autocomplete */}
+      {/* Center: Controlled Global Stock Search Bar with Anchored Autocomplete */}
       {onSelectSymbol && (
-        <div
-          ref={searchRef}
-          style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}
-          className="hidden-mobile"
-        >
-          <form onSubmit={handleSearchSubmit} style={{ display: "flex", alignItems: "center" }}>
+        <div ref={searchRef} className="search-wrapper">
+          <form onSubmit={handleSearchSubmit} style={{ width: "100%" }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 8,
                 background: isSearchFocused ? "#FFFFFF" : "#F4F7FB",
                 border: isSearchFocused ? "1px solid #2563EB" : "1px solid #DCE4EE",
                 borderRadius: 8,
-                padding: "6px 12px",
-                width: 220,
+                padding: "7px 12px",
+                width: "100%",
+                boxSizing: "border-box",
                 transition: "all 0.15s ease",
                 boxShadow: isSearchFocused ? "0 0 0 3px rgba(37, 99, 235, 0.1)" : "none",
               }}
             >
-              <Search size={14} style={{ color: isSearchFocused ? "#2563EB" : "#94A3B8" }} />
+              <Search size={15} style={{ color: isSearchFocused ? "#2563EB" : "#94A3B8", flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Search stock (e.g. TCS)..."
+                placeholder="Search stocks by symbol or company..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -238,32 +185,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </div>
           </form>
 
-          {/* Autocomplete Dropdown */}
-          {isSearchFocused && matchingSymbols.length > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                top: 42,
-                left: 0,
-                width: 280,
-                background: "#FFFFFF",
-                border: "1px solid #DCE4EE",
-                borderRadius: 10,
-                boxShadow: "0 10px 25px rgba(23, 32, 51, 0.12)",
-                zIndex: 60,
-                padding: 6,
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-              }}
-            >
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", padding: "4px 8px" }}>
-                Matching Stocks ({matchingSymbols.length})
+          {/* Autocomplete Dropdown anchored directly below input */}
+          {isSearchFocused && matchingStocks.length > 0 && (
+            <div className="search-dropdown">
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#94A3B8",
+                  textTransform: "uppercase",
+                  padding: "4px 8px",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Matching Stocks ({matchingStocks.length})
               </div>
-              {matchingSymbols.map((sym) => (
+              {matchingStocks.map((stock) => (
                 <div
-                  key={sym}
-                  onClick={() => handleSelectSymbol(sym)}
+                  key={stock.symbol}
+                  onClick={() => handleSelectSymbol(stock.symbol)}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -271,20 +211,49 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     padding: "8px 10px",
                     borderRadius: 6,
                     cursor: "pointer",
-                    background: currentSymbol === sym ? "#EFF6FF" : "transparent",
+                    background: currentSymbol === stock.symbol ? "#EFF6FF" : "transparent",
                     transition: "background 0.1s ease",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#F8FAFC")}
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = currentSymbol === sym ? "#EFF6FF" : "transparent")
+                    (e.currentTarget.style.background =
+                      currentSymbol === stock.symbol ? "#EFF6FF" : "transparent")
                   }
                 >
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#172033", fontFamily: "var(--font-mono)" }}>
-                      {sym}
+                  <div style={{ maxWidth: 240, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#172033",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        {stock.symbol}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#64748B",
+                          background: "#F1F5F9",
+                          padding: "1px 5px",
+                          borderRadius: 3,
+                        }}
+                      >
+                        {stock.sector}
+                      </span>
                     </div>
-                    <div style={{ fontSize: 11, color: "#64748B" }}>
-                      {COMPANY_NAMES[sym]}
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#475569",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {stock.companyName}
                     </div>
                   </div>
                   <span
@@ -296,44 +265,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       padding: "2px 6px",
                       borderRadius: 4,
                       color: "#475569",
+                      flexShrink: 0,
                     }}
                   >
-                    NSE
+                    {stock.exchange}
                   </span>
                 </div>
               ))}
             </div>
           )}
-
-          {/* Popular Symbol Quick-Chips */}
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {POPULAR_SYMBOLS.map((sym) => (
-              <button
-                key={sym}
-                type="button"
-                onClick={() => handleSelectSymbol(sym)}
-                style={{
-                  padding: "3px 8px",
-                  borderRadius: 6,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  fontFamily: "var(--font-mono)",
-                  cursor: "pointer",
-                  border: currentSymbol === sym ? "1px solid #2563EB" : "1px solid #DCE4EE",
-                  background: currentSymbol === sym ? "#EFF6FF" : "#FFFFFF",
-                  color: currentSymbol === sym ? "#2563EB" : "#64748B",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {sym.replace(".NS", "")}
-              </button>
-            ))}
-          </div>
         </div>
       )}
 
       {/* Right: Market Status, Refresh, Notifications, User Profile */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="header-right">
         {/* Market Status Pill */}
         <div
           className={`badge-status ${marketSession === "OPEN" ? "badge-status-operational" : "badge-status-warning"}`}
@@ -389,7 +334,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 borderRadius: 12,
                 padding: 14,
                 boxShadow: "0 10px 25px rgba(23, 32, 51, 0.1)",
-                zIndex: 100,
+                zIndex: 50,
                 display: "flex",
                 flexDirection: "column",
                 gap: 8,
