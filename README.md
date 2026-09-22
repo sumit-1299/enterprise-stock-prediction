@@ -1,184 +1,208 @@
-# Enterprise Stock Intelligence Platform
+# MarketIQ — Enterprise Stock Price Prediction & Market Intelligence Platform
 
-An enterprise-grade, production-ready quantitative finance and machine learning platform for real-time stock price direction forecasting, technical market intelligence, automated model monitoring, and data drift detection.
+[![Build & Tests](https://img.shields.io/badge/tests-82%20passed%20(100%25)-success?style=flat-square&logo=django)](docs/TESTING.md)
+[![Python](https://img.shields.io/badge/python-3.12-blue?style=flat-square&logo=python)](docs/TECH_STACK.md)
+[![Django](https://img.shields.io/badge/django-5.1-green?style=flat-square&logo=django)](docs/TECH_STACK.md)
+[![React](https://img.shields.io/badge/react-18.3-61DAFB?style=flat-square&logo=react)](docs/TECH_STACK.md)
+[![TypeScript](https://img.shields.io/badge/typescript-5.6-3178C6?style=flat-square&logo=typescript)](docs/TECH_STACK.md)
+[![Docker](https://img.shields.io/badge/docker-compose%20v2-2496ED?style=flat-square&logo=docker)](docs/DOCKER_DEPLOYMENT.md)
+[![License](https://img.shields.io/badge/license-MIT-purple?style=flat-square)](LICENSE)
+
+An enterprise-grade, production-ready quantitative finance and machine learning platform for market-data ingestion, automated technical feature engineering, next-day stock price direction forecasting, interactive analytics, model governance, and data-quality monitoring.
+
+> [!NOTE]
+> **Academic & Defense Project**: Engineered for MCA final-year project demonstration, technical viva defense, and institutional evaluation. Implements strict financial data science standards with zero synthetic data fabrication.
 
 ---
 
 ## 📑 Table of Contents
 
-- [Overview](#overview)
-- [Architecture](#architecture)
+- [Project Overview](#project-overview)
 - [Key Features](#key-features)
+- [System Architecture](#system-architecture)
 - [Tech Stack](#tech-stack)
 - [Repository Structure](#repository-structure)
 - [Quickstart with Docker Compose](#quickstart-with-docker-compose)
 - [Local Development Setup](#local-development-setup)
 - [Environment Configuration](#environment-configuration)
+- [API & WebSocket Summary](#api--websocket-summary)
 - [Testing & Quality Assurance](#testing--quality-assurance)
-- [Documentation Index](#documentation-index)
-- [License](#license)
+- [Comprehensive Documentation Index](#comprehensive-documentation-index)
+- [Ethical Financial Disclaimer](#ethical-financial-disclaimer)
 
 ---
 
-## 🚀 Overview
+## 🚀 Project Overview
 
-The **Enterprise Stock Intelligence Platform** delivers institutional-quality quantitative predictions and real-time market analytics for equities (e.g., `TCS.NS`, `RELIANCE.NS`, `INFY.NS`, `HDFCBANK.NS`). The system is architected around strict financial engineering principles:
+**MarketIQ** is an institutional quantitative market intelligence application designed to forecast next-day equity directional price movements ($y_{t+1} \in \{\text{UP}, \text{DOWN}\}$) across major National Stock Exchange of India (NSE) symbols (e.g., `TCS.NS`, `RELIANCE.NS`, `INFY.NS`, `HDFCBANK.NS`).
 
-- **No Lookahead Bias**: Time-series sequential splitting for feature preparation and model training.
-- **Idempotent Ingestion & Inference**: Guaranteed deduplication across Celery polling intervals and prediction runs.
-- **Production ML Monitoring**: Real-time Population Stability Index (PSI) data drift tracking, rolling accuracy metrics, and confusion matrix analytics.
-- **Dual-Serving Delivery**: Low-latency REST APIs complemented by sub-second WebSocket event streams via Django Channels and Redis Pub/Sub.
-- **Modern Fintech UI**: A light-themed, data-dense quantitative dashboard built with React 18, Tailwind CSS, and interactive financial charting.
+The platform is engineered around strict quantitative finance and data science principles:
 
----
-
-## 🏛️ Architecture
-
-```mermaid
-flowchart TD
-    subgraph Client["Presentation Layer"]
-        UI["React 18 Dashboard (Vite)"]
-        WSClient["WebSocket Client"]
-    end
-
-    subgraph Gateway["Reverse Proxy & Gateway"]
-        Nginx["Nginx Reverse Proxy (Port 8080)"]
-    end
-
-    subgraph Backend["Application Layer"]
-        ASGI["Django ASGI / Channels (Daphne)"]
-        WSGI["Django REST Framework (Gunicorn)"]
-        PredSvc["PredictionService & Model Registry"]
-        FeatEng["FeatureEngineeringService"]
-        DriftSvc["DriftMonitoringService"]
-    end
-
-    subgraph Asynchronous["Asynchronous & Scheduling Layer"]
-        CeleryWorker["Celery Worker (Task Consumer)"]
-        CeleryBeat["Celery Beat (Periodic Scheduler)"]
-    end
-
-    subgraph Persistence["Storage & Broker Layer"]
-        Redis["Redis (Broker & Channel Layer)"]
-        Postgres[("PostgreSQL 15 Database")]
-        ModelDisk[("Model Registry Artifacts (Disk)")]
-    end
-
-    UI -->|HTTP /api/| Nginx
-    WSClient -->|WS /ws/| Nginx
-    Nginx -->|Port 8000| ASGI
-    ASGI --> WSGI
-
-    WSGI --> PredSvc
-    WSGI --> FeatEng
-    WSGI --> DriftSvc
-
-    CeleryBeat -->|Queue Tasks| Redis
-    Redis -->|Consume Tasks| CeleryWorker
-    CeleryWorker --> FeatEng
-    CeleryWorker --> PredSvc
-
-    PredSvc --> ModelDisk
-    FeatEng --> Postgres
-    PredSvc --> Postgres
-    WSGI --> Postgres
-
-    CeleryWorker -->|Pub/Sub Events| Redis
-    Redis -->|Broadcast| ASGI
-    ASGI -->|Live Updates| WSClient
-```
-
-For detailed system topology, data flows, and failure recovery specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+1. **Zero Lookahead Bias**: Strict sequential time-series splitting for feature preparation and model training ($t \le T$).
+2. **Deterministic Data Integrity**: Real market observations from PostgreSQL; missing observations return explicit `"Data unavailable"` indicators rather than synthetic or fabricated values.
+3. **End-to-End MLOps**: Continuous Population Stability Index (PSI) feature drift tracking, rolling accuracy evaluation, confusion matrix heatmaps, and probability calibration buckets.
+4. **Dual-Serving Delivery**: Low-latency Django REST Framework endpoints coupled with full-duplex WebSocket channel streams via Django Channels and Redis.
+5. **Modern FinTech Light UI**: A high-density quantitative dashboard built with React 18, TypeScript, Recharts, and a calibrated `#F4F7FB` enterprise color system.
 
 ---
 
 ## ✨ Key Features
 
-### 1. Market Data Ingestion & Technical Analytics
-- Automated polling of real-time and historical market data via `MarketDataService` with resilient provider failover (`yfinance` provider with configurable production feeds).
-- High-performance technical indicator engine calculating:
-  - Moving Averages: SMA-10, SMA-20, SMA-50, EMA-12, EMA-26
-  - Momentum & Trend: MACD (12, 26, 9), MACD Signal, MACD Histogram, RSI-14
-  - Volatility & Volume: 20-day Rolling Volatility, 1-day Return, 5-day Return, Volume Change Percentage.
-- Interactive multi-timeframe price charts (1D, 5D, 1M, 3M, 6M, 1Y) with OHLC Candlestick, Line, and Volume modes.
+- **Automated Market Data Ingestion**: Automated polling of historical and real-time EOD OHLCV bars via `MarketDataService` with resilient network failover and retry logic.
+- **12 Technical Indicators**: High-performance feature engineering calculating SMA (10, 20, 50), EMA (12, 26), MACD line & signal, RSI (14), 20-day rolling annualized volatility, 1D/5D returns, and volume changes.
+- **XGBoost Directional Classification**: Gradient boosted decision tree classifiers trained on sequential market regimes with calibrated probability confidence.
+- **Model Registry & Governance**: Complete lifecycle management tracking model versions (`candidate` &rarr; `staging` &rarr; `production` &rarr; `retired`), artifact checksums, and evaluation splits.
+- **Prediction History & Auditing**: Auditable historical ledger recording every inference, prediction probabilities, 12-feature snapshots, realized market returns, and automated resolution (`CORRECT`, `INCORRECT`, `PENDING`).
+- **Population Stability Index (PSI) Drift Monitoring**: Quantifies feature distribution divergence between reference baseline training sets and live production inference observations.
+- **Data Quality & Hygiene Audit**: Automated validation rules matrix enforcing price continuity, timestamp monotonicity, non-negative volume, and outlier threshold constraints.
+- **Subsystem Health Probes**: Real-time telemetry monitoring Daphne ASGI, PostgreSQL 16, Redis 7, Celery Worker, Celery Beat, and Model Artifact readiness.
+- **Interactive Financial Visualizations**: Multi-timeframe price charts (`1D`, `5D`, `1M`, `3M`, `6M`, `1Y`), volume bars, RSI oscillators, MACD histograms, return distributions, and correlation heatmaps.
 
-### 2. Machine Learning Inference & Model Registry
-- **XGBoost Classifier**: Directional forecasting (probability of price moving `UP` vs. `DOWN` over the next trading interval).
-- **Model Registry**: Strict versioning (`v1`, `v2`), artifact immutability, metadata validation, and zero-downtime model switching.
-- **Explainability**: Top feature importance attribution (SHAP-compatible feature attribution rankings).
+---
 
-### 3. Production Model Monitoring & Data Drift
-- **Population Stability Index (PSI)**: Quantifies covariate shift between baseline training distributions and live feature vectors.
-  - $\text{PSI} < 0.1$: No Drift (Stable)
-  - $0.1 \le \text{PSI} < 0.25$: Moderate Drift (Warning / Monitoring)
-  - $\text{PSI} \ge 0.25$: Significant Drift (Retraining Recommended)
-- **Live Accuracy & Outcome Resolution**: Celery tasks automatically evaluate past predictions against finalized market close prices (`CORRECT`, `INCORRECT`, `PENDING`).
-- **Confusion Matrix & Classification Metrics**: Live calculation of Precision, Recall, F1-Score, and Balanced Accuracy.
+## 🏛️ System Architecture
 
-### 4. Enterprise SaaS User Experience
-- Sophisticated light fintech palette (`#F3F6FA` neutral background, elevated white cards, crisp financial typography).
-- Responsive sidebar navigation with dedicated views: **Executive Dashboard**, **Stock Analysis**, **Prediction History**, and **Model Monitoring**.
-- Resilient graceful degradation for unsupported or un-ingested tickers with zero data fabrication.
+```mermaid
+flowchart TD
+    subgraph Client["Presentation Layer (Port 8080)"]
+        UI["React 18 SPA (Vite + TypeScript)"]
+        WSClient["WebSocket Client (Daphne Consumer)"]
+    end
+
+    subgraph Gateway["Reverse Proxy & Edge"]
+        Nginx["Nginx 1.25 Reverse Proxy (Port 8080)"]
+    end
+
+    subgraph Application["Application Tier"]
+        ASGI["Daphne ASGI Web Server (Port 8000)"]
+        REST["Django REST Framework API"]
+        Channels["Django Channels (MarketConsumer)"]
+        PredSvc["LivePredictionService"]
+        FeatEng["FeatureEngineeringService"]
+        DriftSvc["DataDriftService"]
+        ResSvc["PredictionResolutionService"]
+    end
+
+    subgraph Asynchronous["Asynchronous Task Engine"]
+        CeleryWorker["Celery Worker (Prefork Concurrency)"]
+        CeleryBeat["Celery Beat (Periodic Scheduler)"]
+    end
+
+    subgraph Persistence["Storage & Broker Layer"]
+        Postgres[("PostgreSQL 16 Database\n(Port 5433:5432)")]
+        Redis[("Redis 7 In-Memory Store\n(Port 6379)\nDB 0: Celery | DB 1: Channels")]
+        Artifacts[("Model Registry Artifacts\n(/app/ml/models/artifacts)")]
+    end
+
+    UI -->|HTTP /api/| Nginx
+    WSClient -->|WS /ws/market/| Nginx
+    Nginx -->|Port 8000| ASGI
+
+    ASGI --> REST
+    ASGI --> Channels
+
+    REST --> PredSvc
+    REST --> FeatEng
+    REST --> DriftSvc
+    REST --> Postgres
+
+    Channels -->|Channel Layer| Redis
+
+    CeleryBeat -->|Schedule Tasks| Redis
+    Redis -->|Consume Tasks| CeleryWorker
+
+    CeleryWorker --> FeatEng
+    CeleryWorker --> PredSvc
+    CeleryWorker --> ResSvc
+    CeleryWorker --> Postgres
+    CeleryWorker -->|Publish Events| Redis
+
+    PredSvc --> Artifacts
+    PredSvc --> Postgres
+```
+
+For complete architectural specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Purpose |
+| Layer | Technologies | Description |
 |---|---|---|
-| **Frontend** | React 18, TypeScript/JSX, Vite, Tailwind CSS | High-performance quantitative UI, responsive charts |
-| **Backend** | Django 5.x, Django REST Framework (DRF) | Core API, domain services, security |
-| **Realtime** | Django Channels, Daphne, Redis Channel Layer | Sub-second WebSocket pub/sub streaming |
-| **Task Queue** | Celery 5.x, Celery Beat, Redis Broker | Market polling, inference tasks, resolution jobs |
-| **Machine Learning** | XGBoost, Scikit-learn, Pandas, NumPy | Feature engineering, gradient boosted trees, drift math |
-| **Database** | PostgreSQL 15 | Relational storage for stocks, prices, predictions |
-| **Caching/Broker** | Redis 7 | Celery broker, result backend, Channels layer |
-| **Proxy/Gateway** | Nginx | Reverse proxy, static asset serving, SSL termination |
-| **Containerization** | Docker, Docker Compose | Reproducible multi-container orchestration |
+| **Backend Framework** | Django 5.1, Django REST Framework 3.15, Daphne 4.1 | Asynchronous ASGI REST API & WebSocket server |
+| **Real-Time WebSockets** | Django Channels 4.1, channels-redis 4.3 | Sub-second market updates and prediction broadcasts |
+| **Machine Learning** | XGBoost 2.1+, scikit-learn 1.5+, pandas 2.2+, numpy 2.0+ | Directional classification & feature engineering |
+| **Asynchronous Engine** | Celery 5.4+, Celery Beat | Background ingestion, polling, and prediction resolution |
+| **In-Memory Broker** | Redis 7 Alpine | Celery message broker (DB 0) & Channel Layer (DB 1) |
+| **Relational Database** | PostgreSQL 16 Alpine, psycopg 3 | Relational time-series OHLCV, predictions, model registry |
+| **Frontend Framework** | React 18.3, TypeScript 5.6, Vite 5.4 | High-performance Single Page Application (SPA) |
+| **Visualizations** | Recharts 2.13, Lucide React 0.46 | Institutional financial charts & custom card tooltips |
+| **Gateway & Proxy** | Nginx 1.25 Alpine | Reverse proxy, static asset delivery, SSL termination |
+| **Orchestration** | Docker 24+, Docker Compose v2 | Multi-container isolated microservices architecture |
+
+For complete dependency versions, see [docs/TECH_STACK.md](docs/TECH_STACK.md).
 
 ---
 
 ## 📁 Repository Structure
 
-```text
+```
 enterprise-stock-prediction/
-├── backend/                        # Django backend application root
-│   ├── config/                     # Django project settings, ASGI, WSGI, URLs, Celery
-│   ├── market_data/                # Market ingestion, providers, technical indicators
-│   ├── ml/                         # ML models, registry, training pipeline, inference
-│   │   ├── inference/              # PredictionService, exceptions
-│   │   ├── models/                 # ModelRegistry, training scripts
-│   │   │   └── artifacts/          # Serialized .joblib and .json model metadata
-│   ├── predictions/                # LivePredictionService, drift monitoring, REST views
-│   ├── stocks/                     # Stock entities, exchange registries
-│   ├── users/                      # Authentication and user accounts
-│   ├── manage.py                   # Django CLI management script
-│   └── requirements.txt            # Python production dependencies
-├── frontend/                       # Vite + React 18 client application
-│   ├── src/                        # Components, pages, hooks, services, state
-│   ├── package.json                # Node.js dependencies
-│   ├── vite.config.js              # Vite bundler configuration
-│   └── Dockerfile                  # Multi-stage Nginx build for React
-├── docs/                           # Comprehensive technical documentation
-│   ├── ARCHITECTURE.md             # System architecture, topology, and recovery
-│   ├── ML_PIPELINE.md              # Mathematical definitions, training, PSI drift
-│   ├── API.md                      # REST API and WebSocket specifications
-│   └── VIVA_GUIDE.md               # 25+ defense/viva questions and answers
-├── docker-compose.yml              # Complete multi-service container orchestration
-├── .env.example                    # Root environment configuration template
-└── README.md                       # Main project documentation
+├── backend/                      # Django ASGI/REST Backend Application
+│   ├── config/                   # Project settings, URLs, Celery, ASGI/WSGI
+│   ├── market_data/              # Ingestion services, models, tasks, consumers
+│   ├── predictions/              # Prediction services, monitoring, drift, registry
+│   ├── stocks/                   # Stock universe models & registration commands
+│   ├── users/                    # Authentication application
+│   └── manage.py                 # Django management script
+├── frontend/                     # React 18 TypeScript SPA
+│   ├── src/
+│   │   ├── components/           # UI components (common, layout, charts, dashboard)
+│   │   ├── pages/                # 9 standardized analytics pages
+│   │   ├── services/             # Axios/fetch API client
+│   │   ├── hooks/                # WebSocket hooks
+│   │   └── types/                # TypeScript type definitions
+│   ├── index.html                # HTML entry point with MarketIQ branding
+│   ├── package.json              # Frontend dependencies
+│   └── vite.config.ts            # Vite bundler configuration
+├── ml/                           # Machine Learning Pipeline & Artifacts
+│   ├── inference/                # PredictionService & exception definitions
+│   ├── models/artifacts/         # Serialized .joblib models & .json metadata
+│   └── training/                 # Offline training, cross-validation, evaluation
+├── infrastructure/               # Docker & Gateway Infrastructure
+│   ├── docker/                   # Backend Dockerfile & entrypoints
+│   └── nginx/                    # Nginx reverse proxy configuration
+├── docs/                         # Comprehensive Technical Documentation
+│   ├── ARCHITECTURE.md           # Multi-tier system topology & data flows
+│   ├── TECH_STACK.md             # Detailed technology stack breakdown
+│   ├── MODULE_GUIDE.md           # Component-by-component codebase guide
+│   ├── ML_PIPELINE.md            # Mathematics, features, and model training
+│   ├── DATA_PIPELINE.md          # Ingestion, persistence, and feature store
+│   ├── API.md                    # REST API & WebSocket specification
+│   ├── DATABASE.md               # PostgreSQL schema & ER diagrams
+│   ├── CELERY_REDIS.md           # Task queues, schedules, and brokers
+│   ├── DOCKER_DEPLOYMENT.md      # Container orchestration & deployment
+│   ├── FRONTEND.md               # UI/UX design system & component hierarchy
+│   ├── TESTING.md                # Test suites & quality assurance
+│   ├── MODEL_MONITORING.md       # PSI data drift & model health auditing
+│   ├── PROJECT_WORKFLOW.md       # Step-by-step operational workflows
+│   └── VIVA_GUIDE.md             # MCA defense questions & presentation script
+├── docker-compose.yml            # Multi-container orchestration specification
+├── requirements.txt              # Pinned Python backend dependencies
+└── README.md                     # Main repository documentation
 ```
 
 ---
 
-## 🐳 Quickstart with Docker Compose
+## ⚡ Quickstart with Docker Compose
 
-The simplest and recommended method to run the entire platform is via Docker Compose:
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) (v24.0+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.20+)
 
-### 1. Clone & Configure Environment
-
+### 1. Clone the Repository & Configure Environment
 ```bash
-git clone <repository_url>
+git clone https://github.com/your-username/enterprise-stock-prediction.git
 cd enterprise-stock-prediction
 
 # Copy environment templates
@@ -186,151 +210,77 @@ cp .env.example .env
 cp backend/.env.example backend/.env
 ```
 
-Review `.env` and set your preferred database credentials and secrets.
-
-### 2. Launch Stack
-
+### 2. Build & Launch Containers
 ```bash
 docker compose up -d --build
 ```
 
-This launches all 7 containers in detached mode:
-- `stock_postgres` (Port 5433:5432)
-- `stock_redis` (Port 6379:6379)
-- `stock_backend` (Port 8000)
-- `stock_celery_worker`
-- `stock_celery_beat`
-- `stock_frontend` (Internal Port 80)
+### 3. Verify Container Health
+```bash
+docker compose ps
+```
+All 7 containers should report `Up` or `healthy`:
 - `stock_nginx` (Port 8080)
+- `stock_frontend` (Internal Port 80)
+- `stock_backend` (Internal Port 8000)
+- `stock_celery_worker` (Background daemon)
+- `stock_celery_beat` (Scheduler daemon)
+- `stock_postgres` (Port 5433:5432)
+- `stock_redis` (Port 6379)
 
-### 3. Run Database Migrations
-
-```bash
-docker compose exec backend python /app/backend/manage.py migrate
-```
-
-### 4. Seed Initial Stock & Model Data (Optional)
-
-```bash
-docker compose exec backend python /app/backend/manage.py init_stocks
-```
-
-### 5. Access the Platform
-
-- **Web Dashboard**: [http://localhost:8080](http://localhost:8080)
-- **REST API Health**: [http://localhost:8080/api/health/](http://localhost:8080/api/health/)
+### 4. Access the Platform
+- **Quantitative Dashboard**: [http://localhost:8080](http://localhost:8080)
+- **Backend API Health**: [http://localhost:8080/api/health/](http://localhost:8080/api/health/)
 - **Live Prediction Endpoint**: [http://localhost:8080/api/predictions/TCS.NS/](http://localhost:8080/api/predictions/TCS.NS/)
-
----
-
-## 💻 Local Development Setup
-
-For local bare-metal development without Docker:
-
-### Prerequisites
-- Python 3.11+
-- Node.js 18+ & npm
-- PostgreSQL 15 running locally or via Docker
-- Redis 7 running locally or via Docker
-
-### Backend Setup
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-cp .env.example .env
-# Edit .env with your local PostgreSQL and Redis connection strings
-
-python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
-```
-
-### Celery Worker & Beat (Separate Terminals)
-
-```bash
-# Terminal 1: Worker
-celery -A config worker --loglevel=info
-
-# Terminal 2: Beat Scheduler
-celery -A config beat --loglevel=info
-```
-
-### Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend development server will launch at `http://localhost:5173`.
-
----
-
-## ⚙️ Environment Configuration
-
-| Variable | Default Value | Description |
-|---|---|---|
-| `DJANGO_SETTINGS_MODULE` | `config.settings` | Django settings module path |
-| `SECRET_KEY` | `change_this_to_a_secure_random_key` | Django secret key for cryptographic signing |
-| `DEBUG` | `False` | Enable/disable debug mode (must be `False` in prod) |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1,nginx,backend` | Permitted HTTP host headers |
-| `POSTGRES_DB` | `stock_prediction_db` | PostgreSQL database name |
-| `POSTGRES_USER` | `stock_user` | PostgreSQL database user |
-| `POSTGRES_PASSWORD` | `change_this_to_a_secure_password` | PostgreSQL database user password |
-| `POSTGRES_HOST` | `postgres` | PostgreSQL host (`localhost` for local dev) |
-| `POSTGRES_PORT` | `5432` | PostgreSQL internal port |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis connection URL for cache & channels |
-| `CELERY_BROKER_URL` | `redis://redis:6379/1` | Redis connection URL for Celery broker |
-| `CELERY_RESULT_BACKEND` | `redis://redis:6379/2` | Redis connection URL for Celery task results |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:8080,http://localhost:3000` | Allowed Cross-Origin origins |
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-The platform features a rigorous 82-test automated suite covering unit tests, API integration tests, feature engineering edge cases, and Celery task idempotency.
-
-### Running Backend Tests
-
-To run the full test suite inside the Docker container:
+The platform features an automated test suite verifying market data ingestion, feature extraction, ML inference isolation, and REST API contracts:
 
 ```bash
-docker compose exec backend python /app/backend/manage.py test market_data predictions stocks users --keepdb
+docker compose exec -T backend python /app/backend/manage.py test market_data predictions stocks users --keepdb
 ```
 
-Output:
-```text
-Found 82 test(s).
-System check identified no issues (0 silenced).
-----------------------------------------------------------------------
-Ran 82 tests in 8.712s
+**Test Execution Output**:
+```
+Ran 82 tests in 4.771s
 
 OK
+Preserving test database for alias 'default'...
 ```
+- **Total Tests**: **82 / 82 passing (100% pass rate, 0 failures, 0 errors)**.
+- **Frontend Build**: Verified with zero TypeScript compiler (`tsc`) errors and zero Vite bundle warnings.
 
-### Testing Idempotency & Failure Scenarios
-- **Duplicate Prevention**: Testing repeated execution of prediction pipelines for identical market timestamps verifies that no duplicate rows are created in `predictions_prediction`.
-- **Insufficient Data Guard**: Stocks with fewer than 50 historical price bars raise `InsufficientDataError` and gracefully return HTTP 422 without persisting invalid predictions.
-- **Zero Leakage**: All API error responses strip internal stack traces and secrets.
+For testing methodology and test case descriptions, see [docs/TESTING.md](docs/TESTING.md).
 
 ---
 
-## 📚 Documentation Index
+## 📚 Comprehensive Documentation Index
+
+Explore the complete technical documentation suite:
 
 | Document | Description |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Multi-tier architecture, Celery workflows, WebSocket pipelines, and resilience |
-| [docs/ML_PIPELINE.md](docs/ML_PIPELINE.md) | 12 technical features, XGBoost model architecture, training, and PSI drift math |
-| [docs/API.md](docs/API.md) | REST API endpoints, request/response contracts, and WebSocket channels |
-| [docs/VIVA_GUIDE.md](docs/VIVA_GUIDE.md) | 25+ viva / defense questions and answers on quant finance, ML, and architecture |
+| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System topology, sequence diagrams, and fault-tolerance mechanics |
+| **[TECH_STACK.md](docs/TECH_STACK.md)** | Comprehensive technology stack breakdown and dependency catalog |
+| **[MODULE_GUIDE.md](docs/MODULE_GUIDE.md)** | File-by-file codebase guide across backend, frontend, and ML |
+| **[ML_PIPELINE.md](docs/ML_PIPELINE.md)** | Mathematical formulas, 12 features, XGBoost training, and metrics |
+| **[DATA_PIPELINE.md](docs/DATA_PIPELINE.md)** | Ingestion lifecycle, PostgreSQL schema, and feature store |
+| **[API.md](docs/API.md)** | Complete OpenAPI/REST and WebSocket specification with schemas |
+| **[DATABASE.md](docs/DATABASE.md)** | PostgreSQL relational schema, constraints, and ER diagrams |
+| **[CELERY_REDIS.md](docs/CELERY_REDIS.md)** | Asynchronous tasks, schedules, exponential retries, and broker setup |
+| **[DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md)** | Container orchestration, volume persistence, and networking |
+| **[FRONTEND.md](docs/FRONTEND.md)** | React 18 UI/UX architecture, design tokens, and components |
+| **[TESTING.md](docs/TESTING.md)** | Unit, integration, and regression test suites with coverage details |
+| **[MODEL_MONITORING.md](docs/MODEL_MONITORING.md)** | Population Stability Index (PSI), drift thresholds, and health probes |
+| **[PROJECT_WORKFLOW.md](docs/PROJECT_WORKFLOW.md)** | Operational workflows from data ingestion to outcome resolution |
+| **[VIVA_GUIDE.md](docs/VIVA_GUIDE.md)** | MCA project defense questions, model answers, and viva script |
 
 ---
 
-## 📄 License
+## ⚖️ Ethical Financial Disclaimer
 
-This project is licensed under the MIT License. See `LICENSE` for details.
-
+> [!WARNING]
+> **Educational & Research Use Only**: This software is engineered strictly for educational, academic, and demonstration purposes as part of an MCA final-year project. Stock market trading involves substantial risk of loss. The directional predictions generated by the machine learning models are probabilistic estimates ($t+1$) and **do not constitute financial advice, investment recommendations, or trading signals**. Neither the authors nor contributors accept any liability for financial decisions made using this application.

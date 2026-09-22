@@ -225,71 +225,89 @@ sequenceDiagram
 
 ```mermaid
 erDiagram
-    STOCK ||--o{ MARKET_PRICE : "has historical"
-    STOCK ||--o{ PREDICTION : "generates"
-    STOCK ||--o{ MODEL_DRIFT_METRIC : "tracks"
+    stocks ||--o{ market_prices : "has historical bars"
+    stocks ||--o{ predictions : "has inference records"
+    model_versions ||--o{ model_evaluations : "evaluated across splits"
 
-    STOCK {
-        int id PK
-        string symbol UK "e.g. TCS.NS"
-        string company_name
-        string exchange "NSE, BSE"
-        string sector
+    stocks {
+        bigint id PK
+        varchar symbol UK "e.g. TCS.NS"
+        varchar company_name
+        varchar exchange "NSE, BSE"
+        varchar sector
+        varchar currency "Default: INR"
         boolean is_active
-        datetime created_at
-        datetime updated_at
+        timestamp created_at
+        timestamp updated_at
     }
 
-    MARKET_PRICE {
-        int id PK
-        int stock_id FK
-        datetime timestamp "Market bar timestamp"
-        decimal open_price
-        decimal high_price
-        decimal low_price
-        decimal close_price
+    market_prices {
+        bigint id PK
+        bigint stock_id FK
+        timestamp timestamp "UTC bar open"
+        varchar timeframe "1m, 5m, 15m, 30m, 1h, 1d"
+        numeric open_price
+        numeric high_price
+        numeric low_price
+        numeric close_price
         bigint volume
-        string source "yfinance"
-        string timeframe "1d"
-        datetime created_at
+        varchar source "yfinance"
+        timestamp created_at
     }
 
-    PREDICTION {
-        int id PK
-        int stock_id FK
-        string symbol "TCS.NS"
-        string prediction "UP / DOWN"
-        int direction "1 / 0"
-        float probability "0.0000 - 1.0000"
+    predictions {
+        bigint id PK
+        bigint stock_id FK
+        varchar symbol "TCS.NS"
+        varchar prediction "UP / DOWN"
+        integer direction "1 / 0"
+        float probability "Confidence (0.50 - 1.00)"
         jsonb probabilities "{'UP': x, 'DOWN': y}"
-        string model_type "xgboost_classifier"
-        string model_version "v1"
-        datetime market_data_timestamp
-        datetime generated_at
-        string outcome "PENDING, CORRECT, INCORRECT"
-        decimal target_price
-        float latency_ms
+        varchar model_type "xgboost_classifier"
+        varchar model_version "v1"
+        timestamp market_data_timestamp
         jsonb features_used
         jsonb feature_snapshot
+        varchar actual_direction "UP / DOWN"
+        float actual_return
+        varchar outcome "PENDING, CORRECT, INCORRECT"
+        timestamp resolved_at
+        float latency_ms
+        timestamp generated_at
     }
 
-    MODEL_DRIFT_METRIC {
-        int id PK
-        int stock_id FK
-        string symbol
-        string model_version
-        float psi_score "Population Stability Index"
-        string drift_status "NO_DRIFT, MODERATE_DRIFT, SIGNIFICANT_DRIFT"
-        jsonb feature_psi_scores
-        datetime calculated_at
-        int sample_size
+    model_versions {
+        bigint id PK
+        varchar symbol "Ticker symbol"
+        varchar model_type "xgboost_classifier"
+        varchar version "v1, v2"
+        varchar status "candidate, staging, production, retired, failed"
+        varchar artifact_path
+        varchar metadata_path
+        varchar feature_schema_version "v1"
+        jsonb features
+        jsonb hyperparameters
+        jsonb metrics
+        timestamp created_at
+        timestamp promoted_at
+        timestamp retired_at
+    }
+
+    model_evaluations {
+        bigint id PK
+        bigint model_version_id FK
+        varchar dataset_split "train, validation, test"
+        varchar metric_name "accuracy, roc_auc, f1"
+        float metric_value
+        timestamp evaluated_at
     }
 ```
 
 ### Key Schema Constraints
-- `MARKET_PRICE`: Unique constraint on `(stock_id, timestamp, timeframe)`.
-- `PREDICTION`: Unique constraint on `(stock_id, market_data_timestamp, model_version)` ensuring idempotency across repeated inference executions.
-- `STOCK`: Indexed unique lookup on `symbol`.
+- `market_prices`: Composite unique constraint `unique_market_price` on `(stock_id, timestamp, timeframe, source)`.
+- `predictions`: Composite unique constraint `unique_prediction_per_market_timestamp` on `(stock_id, market_data_timestamp, model_version)`.
+- `stocks`: Unique constraint on `symbol`.
+- `model_versions`: Unique constraint `unique_model_version_per_symbol_and_type` on `(symbol, model_type, version)`.
 
 ---
 
