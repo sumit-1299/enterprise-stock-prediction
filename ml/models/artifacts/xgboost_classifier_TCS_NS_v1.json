@@ -1,0 +1,32 @@
+{
+    "symbol": "TCS.NS",
+    "model_type": "xgboost_classifier",
+    "version": "v1",
+    "features": [
+        "return_1d",
+        "return_5d",
+        "sma_10",
+        "sma_20",
+        "sma_50",
+        "ema_12",
+        "ema_26",
+        "macd",
+        "macd_signal",
+        "rsi_14",
+        "volatility_20",
+        "volume_change"
+    ],
+    "metrics": {
+        "accuracy": 0.4350282485875706,
+        "balanced_accuracy": 0.46639471639471636,
+        "precision": 0.41911764705882354,
+        "recall": 0.7307692307692307,
+        "f1": 0.5327102803738317,
+        "roc_auc": 0.5227920227920227
+    },
+    "created_at": "2026-09-21T18:42:25.027458+00:00",
+    "status": "production",
+    "feature_schema_version": "v1",
+    "promoted_at": "2026-09-22T13:56:27.063751+00:00",
+    "retired_at": null
+}

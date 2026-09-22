@@ -1,0 +1,73 @@
+{
+    "symbol": "HDFCBANK.NS",
+    "model_type": "xgboost_classifier",
+    "version": "v1",
+    "status": "production",
+    "feature_schema_version": "v1",
+    "features": [
+        "return_1d",
+        "return_5d",
+        "sma_10",
+        "sma_20",
+        "sma_50",
+        "ema_12",
+        "ema_26",
+        "macd",
+        "macd_signal",
+        "rsi_14",
+        "volatility_20",
+        "volume_change"
+    ],
+    "hyperparameters": {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.03,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "objective": "binary:logistic",
+        "eval_metric": "logloss",
+        "random_state": 42,
+        "n_jobs": -1
+    },
+    "metrics": {
+        "accuracy": 0.5172413793103449,
+        "balanced_accuracy": 0.5261904761904762,
+        "precision": 0.5,
+        "recall": 0.7857142857142857,
+        "f1": 0.6111111111111112,
+        "roc_auc": 0.4666666666666667,
+        "log_loss": 0.9602596163749695
+    },
+    "created_at": "2026-09-22T09:49:26.468856+00:00",
+    "promoted_at": "2026-09-22T14:25:06.326811+00:00",
+    "retired_at": null,
+    "evaluation_splits": {
+        "validation": {
+            "accuracy": 0.5517241379310345,
+            "balanced_accuracy": 0.4305555555555556,
+            "precision": 0.16666666666666666,
+            "recall": 0.1111111111111111,
+            "f1": 0.13333333333333333,
+            "roc_auc": 0.45,
+            "log_loss": 0.7920332551002502
+        },
+        "test": {
+            "accuracy": 0.5172413793103449,
+            "balanced_accuracy": 0.5261904761904762,
+            "precision": 0.5,
+            "recall": 0.7857142857142857,
+            "f1": 0.6111111111111112,
+            "roc_auc": 0.4666666666666667,
+            "log_loss": 0.9602596163749695
+        },
+        "majority_baseline": {
+            "accuracy": 0.5172413793103449,
+            "balanced_accuracy": 0.5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "roc_auc": 0.5,
+            "log_loss": 17.400384394746208
+        }
+    }
+}

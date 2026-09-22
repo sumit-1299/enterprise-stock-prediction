@@ -1,0 +1,73 @@
+{
+    "symbol": "TCS.NS",
+    "model_type": "xgboost_classifier",
+    "version": "v2",
+    "status": "retired",
+    "feature_schema_version": "v1",
+    "features": [
+        "return_1d",
+        "return_5d",
+        "sma_10",
+        "sma_20",
+        "sma_50",
+        "ema_12",
+        "ema_26",
+        "macd",
+        "macd_signal",
+        "rsi_14",
+        "volatility_20",
+        "volume_change"
+    ],
+    "hyperparameters": {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.03,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "objective": "binary:logistic",
+        "eval_metric": "logloss",
+        "random_state": 42,
+        "n_jobs": -1
+    },
+    "metrics": {
+        "accuracy": 0.47752808988764045,
+        "balanced_accuracy": 0.5138461538461538,
+        "precision": 0.44680851063829785,
+        "recall": 0.8076923076923077,
+        "f1": 0.5753424657534246,
+        "roc_auc": 0.5371794871794873,
+        "log_loss": 0.8196465373039246
+    },
+    "created_at": "2026-09-21T19:21:52.881967+00:00",
+    "promoted_at": "2026-09-21T19:22:01.235219+00:00",
+    "retired_at": "2026-09-21T19:22:13.968232+00:00",
+    "evaluation_splits": {
+        "validation": {
+            "accuracy": 0.48314606741573035,
+            "balanced_accuracy": 0.4778061224489796,
+            "precision": 0.425,
+            "recall": 0.425,
+            "f1": 0.425,
+            "roc_auc": 0.5227040816326531,
+            "log_loss": 0.7334166765213013
+        },
+        "test": {
+            "accuracy": 0.47752808988764045,
+            "balanced_accuracy": 0.5138461538461538,
+            "precision": 0.44680851063829785,
+            "recall": 0.8076923076923077,
+            "f1": 0.5753424657534246,
+            "roc_auc": 0.5371794871794873,
+            "log_loss": 0.8196465373039246
+        },
+        "majority_baseline": {
+            "accuracy": 0.5617977528089888,
+            "balanced_accuracy": 0.5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "roc_auc": 0.5,
+            "log_loss": 15.794409912085046
+        }
+    }
+}

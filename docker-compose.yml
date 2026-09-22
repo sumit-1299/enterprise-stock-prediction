@@ -1,0 +1,199 @@
+# ==============================================================================
+# Docker Compose for Enterprise Stock Price Prediction Platform
+# Services: postgres, redis, backend, celery_worker, celery_beat, frontend, nginx
+# ==============================================================================
+
+networks:
+  stock_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  django_static:
+    driver: local
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: stock_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stock_prediction}
+      POSTGRES_USER: ${POSTGRES_USER:-stock_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stock}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stock_admin} -d ${POSTGRES_DB:-stock_prediction}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 2. Redis Message Broker & Channel Layer
+  redis:
+    image: redis:7-alpine
+    container_name: stock_redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 3. Django ASGI Server (Daphne)
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: stock_backend
+    command: ["backend"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-production-secret-key-change-me}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,nginx,backend}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173}
+      POSTGRES_DB: ${POSTGRES_DB:-stock_prediction}
+      POSTGRES_USER: ${POSTGRES_USER:-stock_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stock}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CHANNEL_REDIS_URL: redis://redis:6379/1
+      MARKET_DATA_PROVIDER: ${MARKET_DATA_PROVIDER:-yfinance}
+      MARKET_DATA_SYMBOLS: ${MARKET_DATA_SYMBOLS:-TCS.NS,RELIANCE.NS,INFY.NS,HDFCBANK.NS}
+      MARKET_DATA_INGEST_INTERVAL_SECONDS: ${MARKET_DATA_INGEST_INTERVAL_SECONDS:-300}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+      - django_static:/app/backend/staticfiles
+      - ./ml/models/artifacts:/app/ml/models/artifacts
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 4. Celery Background Worker
+  celery_worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: stock_celery_worker
+    command: ["celery_worker"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-production-secret-key-change-me}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,nginx,backend}
+      POSTGRES_DB: ${POSTGRES_DB:-stock_prediction}
+      POSTGRES_USER: ${POSTGRES_USER:-stock_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stock}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CHANNEL_REDIS_URL: redis://redis:6379/1
+      MARKET_DATA_PROVIDER: ${MARKET_DATA_PROVIDER:-yfinance}
+      MARKET_DATA_SYMBOLS: ${MARKET_DATA_SYMBOLS:-TCS.NS,RELIANCE.NS,INFY.NS,HDFCBANK.NS}
+      MARKET_DATA_INGEST_INTERVAL_SECONDS: ${MARKET_DATA_INGEST_INTERVAL_SECONDS:-300}
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+      - ./ml/models/artifacts:/app/ml/models/artifacts
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 5. Celery Beat Periodic Scheduler
+  celery_beat:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    container_name: stock_celery_beat
+    command: ["celery_beat"]
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-production-secret-key-change-me}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,nginx,backend}
+      POSTGRES_DB: ${POSTGRES_DB:-stock_prediction}
+      POSTGRES_USER: ${POSTGRES_USER:-stock_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stock}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CHANNEL_REDIS_URL: redis://redis:6379/1
+      MARKET_DATA_PROVIDER: ${MARKET_DATA_PROVIDER:-yfinance}
+      MARKET_DATA_SYMBOLS: ${MARKET_DATA_SYMBOLS:-TCS.NS,RELIANCE.NS,INFY.NS,HDFCBANK.NS}
+      MARKET_DATA_INGEST_INTERVAL_SECONDS: ${MARKET_DATA_INGEST_INTERVAL_SECONDS:-300}
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./ml:/app/ml
+      - ./ml/models/artifacts:/app/ml/models/artifacts
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 6. React Production Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_WS_BASE_URL: ""
+    container_name: stock_frontend
+    restart: unless-stopped
+    networks:
+      - stock_network
+
+  # 7. Nginx Reverse Proxy
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: stock_nginx
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - django_static:/app/staticfiles:ro
+    depends_on:
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - stock_network
+
